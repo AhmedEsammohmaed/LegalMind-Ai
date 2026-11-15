@@ -1,0 +1,29 @@
+{
+  "description": "Synthetic, non-legal evaluation snippets for the bilingual rule-based clause screen. These validate phrase coverage only, not legal correctness.",
+  "cases": [
+    { "id": "payment-contingent", "en": "The final invoice is payable after the client accepts the deliverables.", "ar": "تسدد الفاتورة النهائية بعد قبول العميل للمخرجات." },
+    { "id": "payment-timing", "en": "Invoices are payable within 14 calendar days of receipt.", "ar": "تستحق الفواتير خلال 14 يوماً تقويمياً من استلامها." },
+    { "id": "scope", "en": "The scope of work includes three illustrations as deliverables.", "ar": "يشمل نطاق العمل ثلاث رسومات توضيحية ضمن المخرجات." },
+    { "id": "deadlines", "en": "The delivery date for the work is 30 November.", "ar": "موعد تسليم الأعمال هو 30 نوفمبر." },
+    { "id": "termination", "en": "Either party may terminate this agreement by written notice.", "ar": "يجوز لأي طرف إنهاء الاتفاق بإخطار كتابي." },
+    { "id": "ownership", "en": "Copyright in the final work transfers after full payment.", "ar": "تنتقل حقوق النشر في العمل النهائي بعد سداد كامل الأتعاب." },
+    { "id": "liability", "en": "Each party's liability is subject to the agreed limitation of damages.", "ar": "تخضع مسؤولية كل طرف للحد المتفق عليه للأضرار." },
+    { "id": "confidentiality", "en": "Each party must protect confidential information.", "ar": "يلتزم كل طرف بحماية المعلومات السرية." },
+    { "id": "data-protection", "en": "The provider will process personal data only to perform the services.", "ar": "يعالج مقدم الخدمة البيانات الشخصية لأغراض تنفيذ الخدمات فقط." },
+    { "id": "renewal", "en": "This agreement automatically renews for successive one-year terms.", "ar": "يتجدد هذا الاتفاق تلقائياً لمدد سنوية متتالية." },
+    { "id": "exclusivity", "en": "The freelancer agrees to an exclusive arrangement during the project.", "ar": "يوافق المستقل على ترتيب حصري خلال المشروع." },
+    { "id": "expenses", "en": "Approved travel expenses will be reimbursed against receipts.", "ar": "تسترد مصروفات السفر المعتمدة بموجب الإيصالات." },
+    { "id": "warranties", "en": "The contractor warrants that the deliverables are original.", "ar": "يضمن المتعاقد أن المخرجات أصلية." },
+    { "id": "force-majeure", "en": "A force majeure event may pause affected obligations.", "ar": "يجوز لظروف القوة القاهرة إيقاف الالتزامات المتأثرة." },
+    { "id": "subcontracting", "en": "The provider may not subcontract the services without consent.", "ar": "لا يجوز لمقدم الخدمة التعاقد من الباطن لتنفيذ الخدمات دون موافقة." },
+    { "id": "notices", "en": "Written notice is effective when sent to the addresses below.", "ar": "يسري الإخطار الكتابي عند إرساله إلى العناوين أدناه." },
+    { "id": "amendments", "en": "Any amendment to this agreement must be in writing.", "ar": "يجب أن يكون أي تعديل على هذا الاتفاق مكتوباً." },
+    { "id": "late-payment", "en": "Overdue amounts accrue interest at the stated rate.", "ar": "تستحق فوائد على المبالغ المتأخرة بالسداد وفق النسبة المحددة." },
+    { "id": "disputes", "en": "This agreement is governed by the laws of Egypt.", "ar": "يخضع هذا الاتفاق للقانون المصري." }
+  ],
+  "negativeCases": [
+    { "name": "unrelated English prose", "en": "The parties will meet on Monday to discuss the project schedule.", "ar": "سيجتمع الطرفان يوم الاثنين لمناقشة جدول المشروع." },
+    { "name": "jurisdiction disclaimer", "en": "This sample has not been reviewed for any jurisdiction.", "ar": "هذه العينة لم تراجع وفق قوانين أي اختصاص قضائي." },
+    { "name": "ordinary delivery statement", "en": "Noor will send three image files to Cedar on Friday.", "ar": "سترسل نور ثلاثة ملفات صور إلى سيدار يوم الجمعة." }
+  ]
+}
