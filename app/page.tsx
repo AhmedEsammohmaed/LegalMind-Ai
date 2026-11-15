@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 
 const paths = {
   scale: <><path d="m12 3 8 4-8 4-8-4 8-4Z"/><path d="m4 7 8 4 8-4M4 7v5l8 4 8-4v-5M4 12v5l8 4 8-4v-5"/></>,
@@ -37,6 +37,8 @@ const demoRisks = [
 export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [originalUrl, setOriginalUrl] = useState("");
+  const [ocrVerified, setOcrVerified] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [jurisdiction, setJurisdiction] = useState("Egypt");
   const [ocrLanguage, setOcrLanguage] = useState("ara+eng");
@@ -50,6 +52,10 @@ export default function Home() {
   const [copied, setCopied] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
 
+  useEffect(() => () => {
+    if (originalUrl) URL.revokeObjectURL(originalUrl);
+  }, [originalUrl]);
+
   function acceptFile(candidate?: File) {
     if (!candidate) return;
     const allowed = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
@@ -61,14 +67,12 @@ export default function Home() {
       setFileError("This file is over 20 MB. Choose a smaller document.");
       return;
     }
-    if (candidate.size > 20 * 1024 * 1024) {
-      setFileError("This file is over 20 MB. Choose a smaller document.");
-      return;
-    }
     setFileError("");
     setFile(candidate);
+    setOriginalUrl(URL.createObjectURL(candidate));
     setExtraction(null);
     setShowReport(false);
+    setOcrVerified(false);
   }
 
   function onFileChange(event: ChangeEvent<HTMLInputElement>) { acceptFile(event.target.files?.[0]); }
@@ -101,6 +105,7 @@ export default function Home() {
       if (!response.ok) throw new Error(result.error?.message ?? "We could not extract text from that file.");
       setExtraction(result as ExtractionResult);
       setShowReport(false);
+      setOcrVerified(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       setExtractError(error instanceof Error ? error.message : "The extraction request failed. Try again.");
@@ -155,6 +160,7 @@ export default function Home() {
             <section className="report-meta-card extraction-meta"><div className="report-file-icon"><Icon name="file" size={19}/></div><div className="report-file-name"><strong>{extraction.fileName}</strong><span>{extraction.fileType} · {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : "processed in this session"}</span></div><div className="meta-divider"/><div className="report-law"><span>PAGE COUNT</span><strong>{extraction.pageCount ?? "Not available"}</strong></div><div className="report-date"><span>EXTRACTED TEXT</span><strong>{extraction.text.length.toLocaleString()} characters</strong></div></section>
             {extraction.needsOcr && <div className="ocr-notice"><Icon name="alert" size={17}/><span>{extraction.ocrUsed ? "No text was recognized. Try a different OCR language or a clearer scan." : "No text was found in this document."}</span></div>}
             {extraction.ocrUsed && <div className={`ocr-result ${extraction.ocrLowConfidence ? "ocr-result-low" : ""}`} role="status"><Icon name={extraction.ocrLowConfidence ? "alert" : "check"} size={17}/><div><strong>{extraction.ocrLowConfidence ? "Low OCR confidence — verify against the original" : "OCR was used for scanned pages"}</strong><p>Pages {extraction.ocrPages.join(", ")} · {extraction.ocrLanguage === "ara+eng" ? "Arabic + English" : extraction.ocrLanguage === "ara" ? "Arabic" : "English"}{extraction.ocrConfidence !== null ? ` · OCR confidence signal ${extraction.ocrConfidence}/100` : ""}. This signal is not an accuracy score. Verify names, amounts, dates, and negations against the original.</p></div></div>}
+            {extraction.ocrUsed && <section className="source-review" aria-labelledby="source-review-title"><div className="source-review-copy"><strong id="source-review-title">Compare OCR text with the source</strong><p>OCR can misread important figures even when its confidence signal is high.</p></div>{originalUrl && <a className="source-open-link" href={originalUrl} target="_blank" rel="noreferrer">Open original {extraction.fileType} <span aria-hidden="true">↗</span></a>}<label className="source-check"><input type="checkbox" checked={ocrVerified} onChange={(event) => setOcrVerified(event.target.checked)}/><span>I checked names, amounts, dates, and negations against the original.</span></label>{ocrVerified && <span className="source-reviewed"><Icon name="check" size={14}/> Marked reviewed this session</span>}</section>}
             {extraction.ocrPageLimitReached && <div className="ocr-notice"><Icon name="alert" size={17}/><span>OCR is limited to 10 scanned pages per request. Some later scanned pages may be missing from this text.</span></div>}
             {extraction.truncated && <div className="ocr-notice"><Icon name="alert" size={17}/><span>For safety, the text preview stops at 200,000 characters.</span></div>}
             <section className="extracted-text-card"><div className="extracted-text-heading"><div><div className="step-label"><span>01</span> EXTRACTED CONTENT</div><h2>Review the extracted text</h2></div><button className="copy-button copy-full" disabled={!extraction.text} onClick={() => void copyText("extracted-text", extraction.text)}><Icon name="copy" size={14}/>{copied === "extracted-text" ? "Copied" : "Copy text"}</button></div><pre className="extracted-text">{extraction.text || "No machine-readable text was found in this file."}</pre></section>
