@@ -28,6 +28,16 @@ function Icon({ name, size = 20 }: { name: keyof typeof paths; size?: number }) 
 type Filter = "All items" | "High priority" | "Worth discussing";
 type ExtractionResult = { fileName: string; fileType: "PDF" | "DOCX"; text: string; pageCount: number | null; truncated: boolean; needsOcr: boolean; ocrUsed: boolean; ocrLanguage: string | null; ocrConfidence: number | null; ocrLowConfidence: boolean; ocrPages: number[]; ocrPageLimitReached: boolean };
 
+function detectDocumentLanguage(text: string): "Arabic" | "English" | "Mixed" | "Undetermined" {
+  const letters = text.match(/[\p{L}]/gu) ?? [];
+  if (!letters.length) return "Undetermined";
+  const arabic = letters.filter((letter) => /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]/u.test(letter)).length;
+  const ratio = arabic / letters.length;
+  if (ratio >= 0.8) return "Arabic";
+  if (ratio <= 0.2) return "English";
+  return "Mixed";
+}
+
 const demoRisks = [
   { id: "payment", level: "High priority", title: "Payment depends on open-ended approval", clause: "Payment is due after the client has approved the deliverables.", why: "The clause does not set a review deadline or explain what happens if feedback is delayed. That could make it harder to know when payment is due.", action: "Ask for a fixed review window and a payment date, even if the client does not respond.", suggestion: "The client will review each deliverable within 5 business days. If no written feedback is received in that period, the deliverable will be considered accepted. Invoices are payable within 14 days of acceptance." },
   { id: "ip", level: "Worth discussing", title: "Work ownership transfers before payment", clause: "All work product created under this agreement belongs to the client.", why: "The example wording does not say whether ownership transfers only after full payment, or how your pre-existing tools and materials are treated.", action: "Clarify when ownership transfers and carve out materials you already own.", suggestion: "Upon full payment of the applicable fees, the client owns the final deliverables created specifically under this agreement. The freelancer retains ownership of pre-existing materials, tools, and know-how." },
@@ -42,6 +52,7 @@ export default function Home() {
   const [dragging, setDragging] = useState(false);
   const [jurisdiction, setJurisdiction] = useState("Egypt");
   const [ocrLanguage, setOcrLanguage] = useState("ara+eng");
+  const [responseLanguage, setResponseLanguage] = useState<"auto" | "ar" | "en">("auto");
   const [showReport, setShowReport] = useState(false);
   const [extraction, setExtraction] = useState<ExtractionResult | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -115,6 +126,10 @@ export default function Home() {
   }
 
   const visibleRisks = demoRisks.filter((risk) => filter === "All items" || risk.level === filter);
+  const detectedLanguage = extraction ? detectDocumentLanguage(extraction.text) : "Undetermined";
+  const effectiveResponseLanguage = responseLanguage === "auto"
+    ? detectedLanguage === "Arabic" ? "Arabic" : detectedLanguage === "English" ? "English" : "Ask me / mixed source"
+    : responseLanguage === "ar" ? "Arabic" : "English";
 
   return (
     <main className="app-shell">
@@ -164,7 +179,7 @@ export default function Home() {
             {extraction.ocrPageLimitReached && <div className="ocr-notice"><Icon name="alert" size={17}/><span>OCR is limited to 10 scanned pages per request. Some later scanned pages may be missing from this text.</span></div>}
             {extraction.truncated && <div className="ocr-notice"><Icon name="alert" size={17}/><span>For safety, the text preview stops at 200,000 characters.</span></div>}
             <section className="extracted-text-card"><div className="extracted-text-heading"><div><div className="step-label"><span>01</span> EXTRACTED CONTENT</div><h2>Review the extracted text</h2></div><button className="copy-button copy-full" disabled={!extraction.text} onClick={() => void copyText("extracted-text", extraction.text)}><Icon name="copy" size={14}/>{copied === "extracted-text" ? "Copied" : "Copy text"}</button></div><pre className="extracted-text">{extraction.text || "No machine-readable text was found in this file."}</pre></section>
-            <div className="extraction-next"><div><strong>Next: understand what the contract says</strong><p>This prototype currently extracts text only. It does not interpret clauses or provide legal advice.</p></div><button className="secondary-button" onClick={() => { setShowReport(true); setFilter("All items"); window.scrollTo({ top: 0, behavior: "smooth" }); }}>View fictional report example <Icon name="arrow" size={15}/></button></div>
+            <div className="extraction-next"><div><strong>Legal analysis is the next build step</strong><p>This version extracts text only; it does not yet analyze clauses. The previous report preview used fictional findings and did not analyze your upload.</p><p className="language-detection">Detected document language: <strong>{detectedLanguage}</strong> · Planned response language: <strong>{effectiveResponseLanguage}</strong></p></div><label className="response-language-field">ANALYSIS LANGUAGE<select value={responseLanguage} onChange={(event) => setResponseLanguage(event.target.value as "auto" | "ar" | "en")}><option value="auto">Match document automatically</option><option value="ar">Arabic</option><option value="en">English</option></select></label></div>
             <footer className="report-disclaimer">Text extraction can miss tables, layout, or text in scanned images. Review the original document before relying on this output.</footer>
           </> : null}
           <footer className="page-footer" id="help"><span>© 2026 LegalMind</span><span>Designed for clarity. Built with care.</span><a href="#help">Need a hand? <span>↗</span></a></footer>
