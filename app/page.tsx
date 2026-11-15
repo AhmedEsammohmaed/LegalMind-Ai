@@ -27,6 +27,7 @@ function Icon({ name, size = 20 }: { name: keyof typeof paths; size?: number }) 
 
 type Filter = "All items" | "High priority" | "Worth discussing";
 type ExtractionResult = { fileName: string; fileType: "PDF" | "DOCX"; text: string; pageCount: number | null; truncated: boolean; needsOcr: boolean; ocrUsed: boolean; ocrLanguage: string | null; ocrConfidence: number | null; ocrLowConfidence: boolean; ocrPages: number[]; ocrPageLimitReached: boolean };
+type AnalysisResult = { language: "ar" | "en"; jurisdiction: string; findings: { id: string; category: string; priority: "High" | "Medium" | "Review"; title: string; evidence: string; explanation: string; question: string }[]; summary: string; method: string; disclaimer: string };
 
 function detectDocumentLanguage(text: string): "Arabic" | "English" | "Mixed" | "Undetermined" {
   const letters = text.match(/[\p{L}]/gu) ?? [];
@@ -36,6 +37,13 @@ function detectDocumentLanguage(text: string): "Arabic" | "English" | "Mixed" | 
   if (ratio >= 0.8) return "Arabic";
   if (ratio <= 0.2) return "English";
   return "Mixed";
+}
+
+function detectAnalysisLanguage(text: string): "ar" | "en" {
+  const letters = text.match(/[\p{L}]/gu) ?? [];
+  if (!letters.length) return "ar";
+  const arabic = letters.filter((letter) => /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]/u.test(letter)).length;
+  return arabic / letters.length > 0.5 ? "ar" : "en";
 }
 
 const demoRisks = [
@@ -55,6 +63,9 @@ export default function Home() {
   const [responseLanguage, setResponseLanguage] = useState<"auto" | "ar" | "en">("auto");
   const [showReport, setShowReport] = useState(false);
   const [extraction, setExtraction] = useState<ExtractionResult | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractError, setExtractError] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
@@ -115,6 +126,7 @@ export default function Home() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error?.message ?? "We could not extract text from that file.");
       setExtraction(result as ExtractionResult);
+      setAnalysis(null);
       setShowReport(false);
       setOcrVerified(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -125,10 +137,32 @@ export default function Home() {
     }
   }
 
+  async function analyzeExtractedContract() {
+    if (!extraction?.text) return;
+    setIsAnalyzing(true);
+    setAnalysisError("");
+    setAnalysis(null);
+    const selectedLanguage = responseLanguage === "auto" ? detectAnalysisLanguage(extraction.text) : responseLanguage;
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: extraction.text, language: selectedLanguage, jurisdiction }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "The document could not be analyzed.");
+      setAnalysis(result as AnalysisResult);
+    } catch (error) {
+      setAnalysisError(error instanceof Error ? error.message : "The analysis request failed. Try again.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+
   const visibleRisks = demoRisks.filter((risk) => filter === "All items" || risk.level === filter);
   const detectedLanguage = extraction ? detectDocumentLanguage(extraction.text) : "Undetermined";
   const effectiveResponseLanguage = responseLanguage === "auto"
-    ? detectedLanguage === "Arabic" ? "Arabic" : detectedLanguage === "English" ? "English" : "Ask me / mixed source"
+    ? detectAnalysisLanguage(extraction?.text ?? "") === "ar" ? "Arabic" : "English"
     : responseLanguage === "ar" ? "Arabic" : "English";
 
   return (
@@ -179,7 +213,10 @@ export default function Home() {
             {extraction.ocrPageLimitReached && <div className="ocr-notice"><Icon name="alert" size={17}/><span>OCR is limited to 10 scanned pages per request. Some later scanned pages may be missing from this text.</span></div>}
             {extraction.truncated && <div className="ocr-notice"><Icon name="alert" size={17}/><span>For safety, the text preview stops at 200,000 characters.</span></div>}
             <section className="extracted-text-card"><div className="extracted-text-heading"><div><div className="step-label"><span>01</span> EXTRACTED CONTENT</div><h2>Review the extracted text</h2></div><button className="copy-button copy-full" disabled={!extraction.text} onClick={() => void copyText("extracted-text", extraction.text)}><Icon name="copy" size={14}/>{copied === "extracted-text" ? "Copied" : "Copy text"}</button></div><pre className="extracted-text">{extraction.text || "No machine-readable text was found in this file."}</pre></section>
-            <div className="extraction-next"><div><strong>Legal analysis is the next build step</strong><p>This version extracts text only; it does not yet analyze clauses. The previous report preview used fictional findings and did not analyze your upload.</p><p className="language-detection">Detected document language: <strong>{detectedLanguage}</strong> · Planned response language: <strong>{effectiveResponseLanguage}</strong></p></div><label className="response-language-field">ANALYSIS LANGUAGE<select value={responseLanguage} onChange={(event) => setResponseLanguage(event.target.value as "auto" | "ar" | "en")}><option value="auto">Match document automatically</option><option value="ar">Arabic</option><option value="en">English</option></select></label></div>
+            <div className="extraction-next"><div><strong>Initial clause screening</strong><p>Flags selected payment, termination, ownership, liability, renewal, and dispute wording. It does not verify current law or replace a lawyer’s review.</p><p className="language-detection">Detected document language: <strong>{detectedLanguage}</strong> · Analysis response: <strong>{effectiveResponseLanguage}</strong></p></div><label className="response-language-field">ANALYSIS LANGUAGE<select value={responseLanguage} onChange={(event) => setResponseLanguage(event.target.value as "auto" | "ar" | "en")}><option value="auto">Match document automatically</option><option value="ar">Arabic</option><option value="en">English</option></select></label><button className="primary-button analysis-button" disabled={!extraction.text || extraction.text.length > 80000 || isAnalyzing} onClick={() => void analyzeExtractedContract()}>{isAnalyzing ? "Reviewing clauses…" : "Analyze contract"} {!isAnalyzing && <Icon name="arrow" size={15}/>}</button></div>
+            {extraction.text.length > 80000 && <div className="ocr-notice"><Icon name="alert" size={17}/><span>Initial analysis is limited to 80,000 characters. Shorten the document by analyzing sections separately.</span></div>}
+            {analysisError && <div className="ocr-notice" role="alert"><Icon name="alert" size={17}/><span>{analysisError}</span></div>}
+            {analysis && <section className="analysis-results" dir={analysis.language === "ar" ? "rtl" : "ltr"} lang={analysis.language}><div className="analysis-results-heading"><div><div className="step-label"><span>02</span> {analysis.language === "ar" ? "فحص أولي" : "INITIAL SCREENING"}</div><h2>{analysis.language === "ar" ? "نتائج مراجعة أولية" : "Initial review findings"}</h2></div><span className="analysis-count">{analysis.findings.length} {analysis.language === "ar" ? "بنود" : "findings"}</span></div><p className="analysis-summary">{analysis.summary}</p>{analysis.findings.length ? <div className="analysis-findings">{analysis.findings.map((finding) => <article className="analysis-finding" key={finding.id}><div className="finding-topline"><span className="finding-category">{finding.category}</span><span className={`finding-priority priority-${finding.priority.toLowerCase()}`}>{analysis.language === "ar" ? finding.priority === "High" ? "مرتفع" : finding.priority === "Medium" ? "متوسط" : "للمراجعة" : finding.priority}</span></div><h3>{finding.title}</h3><blockquote>{finding.evidence || (analysis.language === "ar" ? "لم يتوفر اقتباس واضح." : "No clear evidence quote was available.")}</blockquote><p>{finding.explanation}</p><div className="finding-question"><strong>{analysis.language === "ar" ? "سؤال للمناقشة" : "Question to discuss"}</strong><p>{finding.question}</p></div></article>)}</div> : <p className="analysis-empty">{analysis.language === "ar" ? "لم تعثر قواعد الفحص على الأنماط المحددة. قد تظل هناك مسائل أخرى تستحق المراجعة." : "The screening rules did not find these selected patterns. Other issues may still need review."}</p>}<footer className="analysis-disclaimer">{analysis.disclaimer}</footer></section>}
             <footer className="report-disclaimer">Text extraction can miss tables, layout, or text in scanned images. Review the original document before relying on this output.</footer>
           </> : null}
           <footer className="page-footer" id="help"><span>© 2026 LegalMind</span><span>Designed for clarity. Built with care.</span><a href="#help">Need a hand? <span>↗</span></a></footer>
