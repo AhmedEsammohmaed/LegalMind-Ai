@@ -1,20 +1,33 @@
+import { copyFile, mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import mammoth from "mammoth";
-import { getDocumentProxy } from "unpdf";
+import { createWorker, OEM } from "tesseract.js";
+import { getDocumentProxy, renderPageAsImage } from "unpdf";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 120;
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_DOCX_UNCOMPRESSED_BYTES = 40 * 1024 * 1024;
 const MAX_DOCX_COMPRESSION_RATIO = 200;
 const MAX_PDF_PAGES = 200;
 const MAX_EXTRACTED_CHARACTERS = 200_000;
+const MAX_OCR_PAGES = 10;
+const MAX_OCR_PAGE_PIXELS = 4_500_000;
+const OCR_CONFIDENCE_WARNING_THRESHOLD = 70;
 
 type ExtractedContent = {
   text: string;
   pageCount: number | null;
   truncated: boolean;
   needsOcr: boolean;
+  ocrUsed: boolean;
+  ocrLanguage: string | null;
+  ocrConfidence: number | null;
+  ocrLowConfidence: boolean;
+  ocrPages: number[];
+  ocrPageLimitReached: boolean;
 };
 
 function jsonError(status: number, code: string, message: string) {
@@ -84,8 +97,12 @@ function validateDocxArchive(bytes: Uint8Array) {
   return hasDocumentXml ? null : "The file is not a valid DOCX document.";
 }
 
-async function extractPdf(bytes: Uint8Array): Promise<ExtractedContent> {
+async function extractPdf(bytes: Uint8Array, ocrLanguage: string): Promise<ExtractedContent> {
   const pdf = await getDocumentProxy(bytes, { maxImageSize: 16_777_216, stopAtErrors: true });
+  let worker: Awaited<ReturnType<typeof createWorker>> | undefined;
+  let tempLanguageDirectory: string | undefined;
+  const confidenceScores: number[] = [];
+  const ocrPageNumbers: number[] = [];
   try {
     if (pdf.numPages > MAX_PDF_PAGES) {
       throw new Error("This PDF has more than 200 pages. Split it into smaller files and try again.");
@@ -94,12 +111,16 @@ async function extractPdf(bytes: Uint8Array): Promise<ExtractedContent> {
     const chunks: string[] = [];
     let characterCount = 0;
     let truncated = false;
+    let ocrPageLimitReached = false;
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
       const page = await pdf.getPage(pageNumber);
       const content = await page.getTextContent();
+      chunks.push(`\n[Page ${pageNumber}]\n`);
+      let pageTextLength = 0;
       for (const item of content.items) {
         if (!("str" in item)) continue;
         const piece = `${item.str}${item.hasEOL ? "\n" : " "}`;
+        pageTextLength = Math.min(20, pageTextLength + item.str.trim().length);
         const remaining = MAX_EXTRACTED_CHARACTERS - characterCount;
         if (remaining <= 0) {
           truncated = true;
@@ -109,13 +130,70 @@ async function extractPdf(bytes: Uint8Array): Promise<ExtractedContent> {
         characterCount += Math.min(piece.length, remaining);
         if (piece.length > remaining) truncated = true;
       }
+
+      if (!truncated && pageTextLength < 20) {
+        if (ocrPageNumbers.length >= MAX_OCR_PAGES) {
+          ocrPageLimitReached = true;
+        } else {
+          if (!worker) {
+            tempLanguageDirectory = await mkdtemp(path.join(tmpdir(), "legalmind-ocr-"));
+            for (const language of ocrLanguage.split("+")) {
+              const modelDirectory = path.join(process.cwd(), "node_modules", "@tesseract.js-data", language, "4.0.0_best_int");
+              await copyFile(
+                path.join(modelDirectory, `${language}.traineddata.gz`),
+                path.join(tempLanguageDirectory, `${language}.traineddata.gz`),
+              );
+            }
+            worker = await createWorker(ocrLanguage.split("+"), OEM.LSTM_ONLY, {
+              langPath: `${tempLanguageDirectory}${path.sep}`,
+              cachePath: tempLanguageDirectory,
+              cacheMethod: "none",
+              gzip: true,
+              logger: () => undefined,
+            });
+          }
+
+          const viewport = page.getViewport({ scale: 1 });
+          const scale = Math.min(3, Math.sqrt(MAX_OCR_PAGE_PIXELS / (viewport.width * viewport.height)));
+          if (scale < 0.5) throw new Error("A PDF page is too large to OCR safely.");
+          const image = await renderPageAsImage(pdf, pageNumber, {
+            canvasImport: () => import("@napi-rs/canvas"),
+            scale,
+            format: "png",
+          });
+          const result = await worker.recognize(Buffer.from(image));
+          const ocrText = result.data.text.trim();
+          if (ocrText) {
+            chunks.push(`\n${ocrText}\n`);
+            characterCount += ocrText.length;
+          }
+          confidenceScores.push(result.data.confidence);
+          ocrPageNumbers.push(pageNumber);
+        }
+      }
       page.cleanup();
       if (truncated) break;
       chunks.push("\n");
     }
     const text = chunks.join("").trim();
-    return { text, pageCount: pdf.numPages, truncated, needsOcr: text.length === 0 };
+    const averageConfidence = confidenceScores.length
+      ? Math.round(confidenceScores.reduce((sum, score) => sum + score, 0) / confidenceScores.length)
+      : null;
+    return {
+      text: text.slice(0, MAX_EXTRACTED_CHARACTERS),
+      pageCount: pdf.numPages,
+      truncated: truncated || characterCount > MAX_EXTRACTED_CHARACTERS,
+      needsOcr: text.length === 0,
+      ocrUsed: ocrPageNumbers.length > 0,
+      ocrLanguage: ocrPageNumbers.length > 0 ? ocrLanguage : null,
+      ocrConfidence: averageConfidence,
+      ocrLowConfidence: averageConfidence !== null && averageConfidence < OCR_CONFIDENCE_WARNING_THRESHOLD,
+      ocrPages: ocrPageNumbers,
+      ocrPageLimitReached,
+    };
   } finally {
+    if (worker) await worker.terminate();
+    if (tempLanguageDirectory) await rm(tempLanguageDirectory, { recursive: true, force: true });
     await pdf.cleanup();
   }
 }
@@ -132,6 +210,12 @@ async function extractDocx(bytes: Uint8Array): Promise<ExtractedContent> {
     pageCount: null,
     truncated,
     needsOcr: source.length === 0,
+    ocrUsed: false,
+    ocrLanguage: null,
+    ocrConfidence: null,
+    ocrLowConfidence: false,
+    ocrPages: [],
+    ocrPageLimitReached: false,
   };
 }
 
@@ -165,7 +249,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const extracted = extension === "pdf" ? await extractPdf(bytes) : await extractDocx(bytes);
+    const requestedLanguage = formData.get("ocrLanguage");
+    const allowedLanguages = new Set(["ara", "eng", "ara+eng"]);
+    if (requestedLanguage !== null && (typeof requestedLanguage !== "string" || !allowedLanguages.has(requestedLanguage))) {
+      return jsonError(400, "INVALID_OCR_LANGUAGE", "Choose Arabic, English, or Arabic and English for scanned pages.");
+    }
+    const ocrLanguage = typeof requestedLanguage === "string" && allowedLanguages.has(requestedLanguage)
+      ? requestedLanguage
+      : "ara+eng";
+    const extracted = extension === "pdf" ? await extractPdf(bytes, ocrLanguage) : await extractDocx(bytes);
     return Response.json({
       fileName: file.name,
       fileType: extension === "pdf" ? "PDF" : "DOCX",
