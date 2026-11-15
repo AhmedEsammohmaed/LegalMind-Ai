@@ -21,6 +21,7 @@ Open `http://localhost:3000`. Stop the server with `Ctrl+C`.
 - PDF processing is limited to 200 pages, and OCR is limited to 10 sparse-text pages per request. OCR confidence is an automated estimate; verify all OCR text against the source. DOCX archives are checked for unsafe expansion. Extracted text is capped at 200,000 characters.
 - OCR runs locally in the app server with Tesseract.js and installed Arabic/English language data.
 - The legal findings screen is fictional sample content. No legal analysis, source retrieval, authentication, or persistent storage is implemented.
+- Synthetic Arabic/English fixtures and a manual OCR checklist are in `docs/evaluation/CHECKLIST.md`. Regenerate fixtures with `python scripts/create_synthetic_contract_fixtures.py` (requires the documented Python packages and Arial fonts).
 
 This is a local development prototype. Do not expose the upload endpoint publicly or use it with confidential contracts until authentication, rate limits, deployment limits, privacy controls, and security review are added.
 
