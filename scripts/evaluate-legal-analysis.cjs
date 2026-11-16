@@ -111,7 +111,7 @@ if (
 ) passed += 1;
 else {
   failed += 1;
-  console.error("FAIL English amount/date/payment-period extraction or page reference");
+  console.error("FAIL English amount/date/payment-period extraction or page reference:", JSON.stringify(englishFacts));
 }
 const arabicFacts = extractContractFacts("[Page 3]\\nيلتزم العميل بسداد ٥٠٠٠ جنيه مصري خلال ١٥ يوماً قبل ٣٠/٠٤/٢٠٢٦.", "ar");
 if (
@@ -121,7 +121,7 @@ if (
 ) passed += 1;
 else {
   failed += 1;
-  console.error("FAIL Arabic amount/date/payment-period extraction or page reference");
+  console.error("FAIL Arabic amount/date/payment-period extraction or page reference:", JSON.stringify(arabicFacts));
 }
 
 const citationChecks = [
