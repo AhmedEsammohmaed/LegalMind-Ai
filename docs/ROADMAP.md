@@ -28,6 +28,8 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 
 **Goal:** Turn flat text into a source-linked contract outline before making broader claims.
 
+**Progress:** The prototype extracts literal candidate amounts, dates, and payment periods in Arabic and English, with source offsets and PDF page numbers where available. The report labels these as values to verify. Party extraction, general clause segmentation, governing-law candidates, conflict handling, and user correction remain planned.
+
 **Deliverables:** Clause segmentation, document/contract-type suggestions, parties, dates, amounts, defined terms, and governing-law/forum candidates, each linked to page and character offsets. Unknown or conflicting values remain unknown/conflicting.
 
 **Exit criteria:** Every extracted fact has evidence coordinates and a confidence/status; evaluation covers English, Arabic, mixed language, OCR noise, and missing information; user can correct extracted facts.
