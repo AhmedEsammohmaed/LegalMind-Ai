@@ -13,6 +13,15 @@ loaded.filename = sourcePath;
 loaded.paths = module.paths;
 loaded._compile(compiled, sourcePath);
 const { analyzeContract } = loaded.exports;
+const sourcesPath = path.join(root, "lib", "legal-sources.ts");
+const sourcesCompiled = ts.transpileModule(fs.readFileSync(sourcesPath, "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+}).outputText;
+const sourcesModule = new Module(sourcesPath, module);
+sourcesModule.filename = sourcesPath;
+sourcesModule.paths = module.paths;
+sourcesModule._compile(sourcesCompiled, sourcesPath);
+const { getLegalReferences } = sourcesModule.exports;
 const corpus = JSON.parse(fs.readFileSync(path.join(root, "docs", "evaluation", "analysis-cases.json"), "utf8"));
 
 let passed = 0;
@@ -70,6 +79,27 @@ for (const [language, file] of [
   } else passed += 1;
 }
 
+const citationChecks = [
+  ["Egypt privacy", "Egypt", "data-protection", "Articles 4–5", "escc.gov.eg"],
+  ["UAE privacy", "United Arab Emirates", "data-protection", "Articles 5–8", "/1972/download"],
+  ["Egypt copyright", "Egypt", "ownership", "Article 149", "wipo.int"],
+  ["UAE copyright", "United Arab Emirates", "ownership", "Article 9", "/1534/download"],
+];
+for (const [name, jurisdiction, findingId, citation, host] of citationChecks) {
+  const item = getLegalReferences(jurisdiction, [findingId])[0]?.references[0];
+  if (item?.citation === citation && item.url.includes(host) && item.sourceNote && item.checkedOn) passed += 1;
+  else {
+    failed += 1;
+    console.error(`FAIL ${name} citation mapping`);
+  }
+}
+if (getLegalReferences("I’m not sure", ["ownership"])[0]?.references.length === 0) passed += 1;
+else {
+  failed += 1;
+  console.error("FAIL unknown jurisdiction should not return law citations");
+}
+
 console.log(`Legal analysis rule evaluation: ${passed} passed, ${failed} failed.`);
 console.log("Synthetic phrase coverage only; this does not validate legal correctness or OCR accuracy.");
 process.exitCode = failed ? 1 : 0;
+

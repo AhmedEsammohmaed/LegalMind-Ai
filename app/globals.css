@@ -137,6 +137,15 @@
 .finding-question strong{font-size:9px;color:#43584a}
 .analysis-empty{padding:13px;border-radius:7px;background:#f5f7f5;color:#65746a;font-size:10px;line-height:1.6}
 .analysis-disclaimer{margin-top:13px;padding-top:10px;border-top:1px solid #edf0ed;color:#879189;font-size:9px;line-height:1.65}
+.legal-references{margin-top:11px;padding-top:9px;border-top:1px solid #e9eeea}
+.legal-references>strong{display:block;margin-bottom:7px;color:#66776c;font-size:8px;letter-spacing:.25px}
+.legal-reference{display:grid;gap:5px;margin-top:6px;padding:9px 10px;background:#f5f8f5;border-radius:6px}
+.legal-reference>a{color:#35644a;font-size:9px;font-weight:650;text-decoration:none;overflow-wrap:anywhere}
+.legal-reference>a:hover{text-decoration:underline}
+.legal-reference>span,.legal-reference details p,.no-legal-reference{margin:0;color:#7c8980;font-size:8px;line-height:1.6}
+.legal-reference details summary{color:#748178;font-size:8px;cursor:pointer}
+.legal-reference details p{margin-top:5px}
+.no-legal-reference{padding:8px 9px;background:#f6f7f6;border-radius:5px}
 @media(max-width:720px){.report-title-row .extraction-complete{font-size:0;padding:8px}.report-title-row .extraction-complete svg{width:16px;height:16px}.extracted-text-card{padding:13px}.extracted-text{font-size:10px;padding:11px;max-height:55vh}.extraction-next{align-items:flex-start;flex-direction:column}.extraction-next .secondary-button{width:100%;justify-content:center}.extraction-meta .report-date strong{overflow-wrap:anywhere}}
 .review-field{display:flex;flex-direction:column;gap:0;min-width:170px;flex:1}
 .review-field .select-wrap{width:100%}

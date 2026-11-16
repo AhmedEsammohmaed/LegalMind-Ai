@@ -14,7 +14,7 @@ The corpus is in `analysis-cases.json`; the evaluator is `scripts/evaluate-legal
 
 ## Current result
 
-The current corpus passes 59 checks. Checks require each positive sample to trigger its expected rule, each negative sample to have no findings, and baseline contracts to produce only the expected clause topics while avoiding a false dispute finding.
+The current corpus checks English and Arabic rule matches, negative snippets, exact baseline finding sets, and selected legal-source mappings for Egypt/UAE copyright and data protection. It also verifies that no law is returned when the user has not selected a jurisdiction.
 
 ## Limits
 
@@ -22,7 +22,8 @@ The current corpus passes 59 checks. Checks require each positive sample to trig
 - Passing means phrase coverage for this small corpus. It does not establish recall or precision on real contracts, correct interpretation, legal validity, or safety for any jurisdiction.
 - The analyzer reports every topic as **Review**; it does not assign calibrated risk severity or infer whether a clause benefits either party.
 - Rule matching can miss paraphrases, be triggered by incidental language, and fail on OCR errors, mixed scripts, tables, or clauses whose meaning depends on surrounding sections.
-- No statute, regulation, court decision, or other legal source is connected or cited. Jurisdiction selection does not change the rules.
+- A small, manually curated source registry is connected for some topics. It is not automated legal research, does not refresh source texts, and leaves many topics without a source. Jurisdiction selection changes references, not the underlying detection rules.
+- Citations are related research leads, not evidence that a clause is lawful/unlawful or that the cited provision governs the contract. The Egypt Civil Code PDF is not a consolidated amendment history; Egypt copyright metadata is only verified through 2020. UAE English translations should be checked against official Arabic texts. Special laws, implementing regulations, local emirate rules, and facts may alter applicability.
 - The Arabic scanned PDF fixture has a known OCR error: `50%` was read as `9650`. Analyzer phrase checks on ground-truth text do not validate OCR accuracy.
 
 Before making jurisdiction-specific claims, connect authoritative, versioned legal sources and have the resulting rule set reviewed by qualified counsel for the selected jurisdiction.
