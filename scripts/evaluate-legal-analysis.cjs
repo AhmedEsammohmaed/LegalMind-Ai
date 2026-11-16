@@ -22,7 +22,7 @@ factsModule.filename = factsPath;
 factsModule.paths = module.paths;
 factsModule._compile(factsCompiled, factsPath);
 const { extractContractFacts } = factsModule.exports;
-const sourcesPath = path.join(root, "lib", "legal-sources.ts");
+const obligationsPath = path.join(root, "lib", "contract-obligations.ts");\nconst obligationsCompiled = ts.transpileModule(fs.readFileSync(obligationsPath, "utf8"), {\n  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },\n}).outputText;\nconst obligationsModule = new Module(obligationsPath, module);\nobligationsModule.filename = obligationsPath;\nobligationsModule.paths = module.paths;\nobligationsModule._compile(obligationsCompiled, obligationsPath);\nconst { extractObligationCandidates } = obligationsModule.exports;\nconst sourcesPath = path.join(root, "lib", "legal-sources.ts");
 const sourcesCompiled = ts.transpileModule(fs.readFileSync(sourcesPath, "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
 }).outputText;
@@ -124,7 +124,7 @@ else {
   console.error("FAIL Arabic amount/date/payment-period extraction or page reference:", JSON.stringify(arabicFacts));
 }
 
-const citationChecks = [
+const obligationEnglishText = "[Page 2]\\nThe Client shall pay AED 1,250 within 30 days.";\nconst obligationEnglishFacts = extractContractFacts(obligationEnglishText, "en");\nconst obligationEnglish = extractObligationCandidates(obligationEnglishText, obligationEnglishFacts);\nif (obligationEnglish.length === 1 && obligationEnglish[0].partyRole.toLowerCase() === "the client" && obligationEnglish[0].dutyVerb === "pay" && obligationEnglish[0].pageNumber === 2 && obligationEnglish[0].amountCandidates.includes("AED 1,250") && obligationEnglish[0].timingCandidates.some((value) => value.includes("30 days")) && obligationEnglish[0].evidence.includes("shall pay")) passed += 1;\nelse { failed += 1; console.error("FAIL English obligation candidate evidence, page, or related facts:", JSON.stringify(obligationEnglish)); }\nconst obligationArabicText = "[Page 3]\\nيلتزم العميل بسداد ٥٠٠٠ جنيه مصري خلال ١٥ يوماً.";\nconst obligationArabicFacts = extractContractFacts(obligationArabicText, "ar");\nconst obligationArabic = extractObligationCandidates(obligationArabicText, obligationArabicFacts);\nif (obligationArabic.length === 1 && obligationArabic[0].partyRole === "العميل" && obligationArabic[0].dutyVerb === "بسداد" && obligationArabic[0].pageNumber === 3 && obligationArabic[0].amountCandidates.length > 0 && obligationArabic[0].timingCandidates.length > 0 && obligationArabic[0].evidence.includes("يلتزم العميل")) passed += 1;\nelse { failed += 1; console.error("FAIL Arabic obligation candidate evidence, page, or related facts:", JSON.stringify(obligationArabic)); }\n\nconst citationChecks = [
   ["Egypt privacy", "Egypt", "data-protection", "Articles 4–5", "escc.gov.eg"],
   ["UAE privacy", "United Arab Emirates", "data-protection", "Articles 5–8", "/1972/download"],
   ["Egypt copyright", "Egypt", "ownership", "Article 149", "wipo.int"],
