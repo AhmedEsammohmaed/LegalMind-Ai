@@ -13,6 +13,15 @@ loaded.filename = sourcePath;
 loaded.paths = module.paths;
 loaded._compile(compiled, sourcePath);
 const { analyzeContract } = loaded.exports;
+const factsPath = path.join(root, "lib", "contract-facts.ts");
+const factsCompiled = ts.transpileModule(fs.readFileSync(factsPath, "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+}).outputText;
+const factsModule = new Module(factsPath, module);
+factsModule.filename = factsPath;
+factsModule.paths = module.paths;
+factsModule._compile(factsCompiled, factsPath);
+const { extractContractFacts } = factsModule.exports;
 const sourcesPath = path.join(root, "lib", "legal-sources.ts");
 const sourcesCompiled = ts.transpileModule(fs.readFileSync(sourcesPath, "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
@@ -92,6 +101,27 @@ for (const [language, file] of [
     failed += unexpected.length;
     console.error(`FAIL ${language.toUpperCase()} baseline fixture unexpected findings: ${unexpected.join(", ")}`);
   } else passed += 1;
+}
+
+const englishFacts = extractContractFacts("[Page 2]\\nPayment: AED 1,250. Payment is due within 30 days by 2026-04-01.", "en");
+if (
+  englishFacts.some((fact) => fact.category === "amount" && fact.value === "AED 1,250" && fact.pageNumber === 2) &&
+  englishFacts.some((fact) => fact.category === "payment-period" && fact.value === "within 30 days" && fact.pageNumber === 2) &&
+  englishFacts.some((fact) => fact.category === "date" && fact.value === "2026-04-01" && fact.pageNumber === 2)
+) passed += 1;
+else {
+  failed += 1;
+  console.error("FAIL English amount/date/payment-period extraction or page reference");
+}
+const arabicFacts = extractContractFacts("[Page 3]\\nيلتزم العميل بسداد ٥٠٠٠ جنيه مصري خلال ١٥ يوماً قبل ٣٠/٠٤/٢٠٢٦.", "ar");
+if (
+  arabicFacts.some((fact) => fact.category === "amount" && fact.pageNumber === 3) &&
+  arabicFacts.some((fact) => fact.category === "payment-period" && fact.pageNumber === 3) &&
+  arabicFacts.some((fact) => fact.category === "date" && fact.pageNumber === 3)
+) passed += 1;
+else {
+  failed += 1;
+  console.error("FAIL Arabic amount/date/payment-period extraction or page reference");
 }
 
 const citationChecks = [
