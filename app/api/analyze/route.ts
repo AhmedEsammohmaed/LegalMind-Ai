@@ -1,6 +1,7 @@
 import { analyzeContract, type AnalysisLanguage } from "@/lib/legal-analysis";
 import { getLegalReferences, type Jurisdiction } from "@/lib/legal-sources";
 import { extractContractFacts } from "@/lib/contract-facts";
+import { extractObligationCandidates } from "@/lib/contract-obligations";
 
 const MAX_ANALYSIS_CHARACTERS = 80_000;
 
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
 
   const findings = analyzeContract(text, language as AnalysisLanguage);
   const contractFacts = extractContractFacts(text, language as AnalysisLanguage);
+  const obligations = extractObligationCandidates(text, contractFacts);
   const legalReferences = getLegalReferences(jurisdiction as Jurisdiction, findings.map((finding) => finding.id));
   return Response.json({
     language,
