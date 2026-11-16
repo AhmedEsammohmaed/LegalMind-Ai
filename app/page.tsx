@@ -114,6 +114,52 @@ export default function Home() {
     }
   }
 
+  function downloadReviewReport() {
+    if (!analysis || !extraction) return;
+    const isArabic = analysis.language === "ar";
+    const lines = [
+      isArabic ? "# تقرير الفحص الأولي للعقد" : "# Initial contract screening report",
+      "",
+      `${isArabic ? "الملف" : "File"}: ${extraction.fileName}`,
+      `${isArabic ? "الاختصاص المحدد" : "Selected jurisdiction"}: ${analysis.jurisdiction}`,
+      `${isArabic ? "لغة التقرير" : "Report language"}: ${isArabic ? "العربية" : "English"}`,
+      `${isArabic ? "طريقة الفحص" : "Screening method"}: ${analysis.method}`,
+      `${isArabic ? "النتيجة" : "Summary"}: ${analysis.summary}`,
+      "",
+      ...analysis.findings.flatMap((finding, index) => {
+        const sourceResult = analysis.legalReferences.find((entry) => entry.findingId === finding.id);
+        return [
+          `## ${index + 1}. ${finding.title}`,
+          `**${isArabic ? "الفئة" : "Category"}:** ${finding.category} · **${isArabic ? "الحالة" : "Status"}: ${isArabic ? "للمراجعة" : finding.priority}`,
+          `**${isArabic ? "النص المستخرج" : "Extracted evidence"}:** ${finding.evidence || (isArabic ? "لم يتوفر اقتباس واضح." : "No clear evidence quote was available.")}`,
+          `**${isArabic ? "التوضيح" : "Explanation"}:** ${finding.explanation}`,
+          `**${isArabic ? "سؤال للمناقشة" : "Question to discuss"}:** ${finding.question}`,
+          ...(sourceResult?.references.length
+            ? sourceResult.references.flatMap((reference) => [
+              `**${isArabic ? "مرجع بحثي" : "Research reference"}:** [${reference.title} · ${reference.citation}](${reference.url})`,
+              `**${isArabic ? "حالة المصدر" : "Source status"}:** ${isArabic ? reference.sourceNoteAr : `${reference.sourceNote} ${reference.note}`}`,
+              `**${isArabic ? "تاريخ التحقق" : "Checked on"}:** ${reference.checkedOn}`,
+            ])
+            : [`**${isArabic ? "المراجع" : "References"}:** ${isArabic ? "لم يتم التحقق من مصدر محدد لهذا الموضوع في الاختصاص المختار ضمن السجل الحالي." : sourceResult?.unavailableReason ?? "No connected reference."}`]),
+          "",
+        ];
+      }),
+      `## ${isArabic ? "حدود التقرير" : "Report limitations"}`,
+      analysis.disclaimer,
+      isArabic
+        ? "نتائج الفحص الأولي ومراجع البحث لا تمثل رأياً قانونياً ولا تثبت صحة النص المستخرج أو انطباق أي قانون. راجع المستند الأصلي واستشر محامياً مؤهلاً."
+        : "Screening findings and research references are not legal advice and do not establish that extracted text is accurate or that a law applies. Check the original document and consult a qualified lawyer.",
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const safeName = extraction.fileName.replace(/\.[^.]+$/u, "").replace(/[^\p{L}\p{N}-]+/gu, "-").replace(/^-|-$/gu, "").slice(0, 80) || "contract-review";
+    link.href = url;
+    link.download = `${safeName}-review.md`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   async function extractContract() {
     if (!file) return;
     setIsExtracting(true);
@@ -214,6 +260,7 @@ export default function Home() {
             {extraction.truncated && <div className="ocr-notice"><Icon name="alert" size={17}/><span>For safety, the text preview stops at 200,000 characters.</span></div>}
             <section className="extracted-text-card"><div className="extracted-text-heading"><div><div className="step-label"><span>01</span> EXTRACTED CONTENT</div><h2>Review the extracted text</h2></div><button className="copy-button copy-full" disabled={!extraction.text} onClick={() => void copyText("extracted-text", extraction.text)}><Icon name="copy" size={14}/>{copied === "extracted-text" ? "Copied" : "Copy text"}</button></div><pre className="extracted-text">{extraction.text || "No machine-readable text was found in this file."}</pre></section>
             <div className="extraction-next"><div><strong>Initial clause screening</strong><p>Flags selected payment, termination, ownership, liability, renewal, and dispute wording. It does not verify current law or replace a lawyer’s review.</p><p className="language-detection">Detected document language: <strong>{detectedLanguage}</strong> · Analysis response: <strong>{effectiveResponseLanguage}</strong></p></div><label className="response-language-field">ANALYSIS LANGUAGE<select value={responseLanguage} onChange={(event) => setResponseLanguage(event.target.value as "auto" | "ar" | "en")}><option value="auto">Match document automatically</option><option value="ar">Arabic</option><option value="en">English</option></select></label><button className="primary-button analysis-button" disabled={!extraction.text || extraction.text.length > 80000 || isAnalyzing} onClick={() => void analyzeExtractedContract()}>{isAnalyzing ? "Reviewing clauses…" : "Analyze contract"} {!isAnalyzing && <Icon name="arrow" size={15}/>}</button></div>
+            {analysis && <div className="report-download-row"><button className="secondary-button" onClick={downloadReviewReport}>{analysis.language === "ar" ? "تنزيل تقرير المراجعة" : "Download review report"}</button></div>}
             {extraction.text.length > 80000 && <div className="ocr-notice"><Icon name="alert" size={17}/><span>Initial analysis is limited to 80,000 characters. Shorten the document by analyzing sections separately.</span></div>}
             {analysisError && <div className="ocr-notice" role="alert"><Icon name="alert" size={17}/><span>{analysisError}</span></div>}
             {analysis && <section className="analysis-results" dir={analysis.language === "ar" ? "rtl" : "ltr"} lang={analysis.language}><div className="analysis-results-heading"><div><div className="step-label"><span>02</span> {analysis.language === "ar" ? "فحص أولي" : "INITIAL SCREENING"}</div><h2>{analysis.language === "ar" ? "نتائج مراجعة أولية" : "Initial review findings"}</h2></div><span className="analysis-count">{analysis.findings.length} {analysis.language === "ar" ? "بنود" : "findings"}</span></div><p className="analysis-summary">{analysis.summary}</p>{analysis.findings.length ? <div className="analysis-findings">{analysis.findings.map((finding) => { const referenceResult = analysis.legalReferences.find((entry) => entry.findingId === finding.id); return <article className="analysis-finding" key={finding.id}><div className="finding-topline"><span className="finding-category">{finding.category}</span><span className={`finding-priority priority-${finding.priority.toLowerCase()}`}>{analysis.language === "ar" ? "للمراجعة" : finding.priority}</span></div><h3>{finding.title}</h3><blockquote>{finding.evidence || (analysis.language === "ar" ? "لم يتوفر اقتباس واضح." : "No clear evidence quote was available.")}</blockquote><p>{finding.explanation}</p><div className="finding-question"><strong>{analysis.language === "ar" ? "سؤال للمناقشة" : "Question to discuss"}</strong><p>{finding.question}</p></div><div className="legal-references"><strong>{analysis.language === "ar" ? "مراجع قانونية مرتبطة — للاستدلال البحثي فقط" : "Related legal references — research leads only"}</strong>{referenceResult?.references.length ? referenceResult.references.map((reference) => <div className="legal-reference" key={`${reference.url}-${reference.citation}`}><a href={reference.url} target="_blank" rel="noreferrer">{reference.title} · {reference.citation} <span aria-label="opens in new tab">↗</span></a><span>{analysis.language === "ar" ? "تاريخ السريان" : "Effective"}: {reference.effectiveFrom} · {reference.language} · {analysis.language === "ar" ? "تم التحقق من المصدر" : "Source checked"}: {reference.checkedOn}</span><details><summary>{analysis.language === "ar" ? "حالة المصدر وحدوده" : "Source status and limits"}</summary><p>{analysis.language === "ar" ? `${reference.sourceNoteAr} هذه مواد ذات صلة عامة ولا تحسم تطبيق القانون على هذا البند.` : `${reference.sourceNote} ${reference.note}`}</p></details></div>) : <p className="no-legal-reference">{analysis.language === "ar" ? referenceResult?.unavailableReason === "Select the contract jurisdiction to see any connected legal references." ? "اختر الاختصاص القضائي لعرض المراجع القانونية المتاحة." : "لا يوجد مصدر قانوني موثق ومرتبط بهذا الموضوع والاختصاص في هذه النسخة." : referenceResult?.unavailableReason}</p>}</div></article>; })}</div> : <p className="analysis-empty">{analysis.language === "ar" ? "لم تعثر قواعد الفحص على الأنماط المحددة. قد تظل هناك مسائل أخرى تستحق المراجعة." : "The screening rules did not find these selected patterns. Other issues may still need review."}</p>}<footer className="analysis-disclaimer">{analysis.disclaimer}</footer></section>}
