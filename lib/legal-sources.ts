@@ -75,6 +75,12 @@ const uaeCopyrightSource = {
 type SourceCitation = Omit<LegalReference, "note" | "citation"> & { citation: string };
 type SourceRule = { topic: string; article: string; note: string; jurisdictions: Partial<Record<"Egypt" | "United Arab Emirates", SourceCitation>> };
 
+const issueIds = ["payment-contingent", "payment-timing", "scope", "deadlines", "termination", "ownership", "liability", "confidentiality", "data-protection", "renewal", "exclusivity", "expenses", "warranties", "force-majeure", "subcontracting", "notices", "amendments", "late-payment", "disputes"] as const;
+type IssueId = typeof issueIds[number];
+
+const egyptHasNoSpecificSource = "No specific provision was verified in this curated registry for this topic. This is a coverage gap, not a finding that no applicable law exists.";
+const uaeHasNoSpecificSource = "No specific provision was verified in this curated registry for this topic. This is a coverage gap, not a finding that no applicable law exists.";
+
 const mappings: Record<string, SourceRule[]> = {
   "payment-contingent": [
     { topic: "Contract performance and good faith", article: "Article 148", note: "General contract-performance provision; it does not specifically decide whether this acceptance condition is valid or adequate.", jurisdictions: { Egypt: { ...egyptSource, citation: "Article 148" } } },
@@ -108,6 +114,9 @@ const mappings: Record<string, SourceRule[]> = {
     { topic: "Controller and processor duties", article: "Articles 4–5", note: "Personal-data law references only; application depends on statutory scope, exceptions, and the Executive Regulations.", jurisdictions: { Egypt: { ...egyptDataSource, citation: "Articles 4–5" } } },
     { topic: "Processing controls and controller/processor duties", article: "Articles 5–8", note: "Personal-data law references only; scope, exceptions, free-zone rules, and Executive Regulations may affect application.", jurisdictions: { "United Arab Emirates": { ...uaeDataSource, citation: "Articles 5–8" } } },
   ],
+  confidentiality: [
+    { topic: "Unauthorized use or disclosure of confidential information in negotiations or a contract", article: "Article 123", note: "The provision concerns confidential information obtained in connection with negotiations or a contract; it does not validate every confidentiality clause or define all protected information.", jurisdictions: { "United Arab Emirates": { ...uaeSource, citation: "Article 123" } } },
+  ],
   "force-majeure": [
     { topic: "Foreign cause and force majeure", article: "Articles 159, 165, and 217", note: "General provisions; effect depends on the specific obligation and facts.", jurisdictions: { Egypt: { ...egyptSource, citation: "Articles 159, 165, and 217" } } },
     { topic: "Exceptional circumstances and force majeure", article: "Articles 224 and 236", note: "These provisions address onerous exceptional circumstances and impossibility caused by force majeure; application is fact-specific.", jurisdictions: { "United Arab Emirates": { ...uaeSource, citation: "Articles 224 and 236" } } },
@@ -116,11 +125,28 @@ const mappings: Record<string, SourceRule[]> = {
     { topic: "Delay in monetary obligations", article: "Articles 226–228", note: "References concerning delay in monetary obligations. No interest rate or current amended wording is stated here; verify the Official Gazette and obtain legal advice.", jurisdictions: { Egypt: { ...egyptSource, citation: "Articles 226–228" } } },
     { topic: "Delay in performance and agreed compensation", article: "Articles 336–340", note: "General delay and agreed-compensation provisions; these are not an interest-rate determination for this contract.", jurisdictions: { "United Arab Emirates": { ...uaeSource, citation: "Articles 336–340" } } },
   ],
+  warranties: [
+    { topic: "Quality of materials and defective performance in contracts for work", article: "Articles 648 and 650", note: "These provisions concern contracts for work and specified material-quality or defective-performance situations; they are not a general warranty rule for every service or product contract.", jurisdictions: { Egypt: { ...egyptSource, citation: "Articles 648 and 650" } } },
+  ],
+  subcontracting: [
+    { topic: "Subcontracting in a contract for work", article: "Article 661", note: "For contracts for work, subcontracting is permitted unless prohibited by contract or the personal skill of the contractor is intended; the original contractor remains responsible to the employer. Confirm this contract type and current text.", jurisdictions: { Egypt: { ...egyptSource, citation: "Article 661" } } },
+  ],
   amendments: [
     { topic: "Contract amendment", article: "Article 147", note: "General rule on amendment and rescission; it does not assess this amendment clause.", jurisdictions: { Egypt: { ...egyptSource, citation: "Article 147" } } },
     { topic: "Contract amendment", article: "Article 113(2)", note: "General rule on amendment and rescission; it does not assess this amendment clause.", jurisdictions: { "United Arab Emirates": { ...uaeSource, citation: "Article 113(2)" } } },
   ],
 };
+
+// Every analyzer topic has an explicit decision per supported jurisdiction.
+// Missing mappings remain visible as research gaps; they are never filled with a loosely related citation.
+export function getLegalSourceCoverage() {
+  return issueIds.map((findingId) => ({
+    findingId,
+    Egypt: mappings[findingId]?.some((rule) => rule.jurisdictions.Egypt) ? "verified-reference" as const : "no-verified-topic-specific-source" as const,
+    "United Arab Emirates": mappings[findingId]?.some((rule) => rule.jurisdictions["United Arab Emirates"]) ? "verified-reference" as const : "no-verified-topic-specific-source" as const,
+    noSourceReason: { Egypt: egyptHasNoSpecificSource, "United Arab Emirates": uaeHasNoSpecificSource },
+  }));
+}
 
 export function getLegalReferences(jurisdiction: Jurisdiction, findingIds: string[]) {
   const key = jurisdiction === "I’m not sure" ? null : jurisdiction;
@@ -133,7 +159,7 @@ export function getLegalReferences(jurisdiction: Jurisdiction, findingIds: strin
       findingId,
       references: reference ? [{ ...reference, topic: rule?.topic ?? "", note: rule?.note ?? "" }] : [],
       unavailableReason: reference ? null : key
-        ? "No verified, topic-specific legal source is connected for this finding and jurisdiction."
+        ? key === "Egypt" ? egyptHasNoSpecificSource : uaeHasNoSpecificSource
         : "Select the contract jurisdiction to see any connected legal references.",
     };
   });

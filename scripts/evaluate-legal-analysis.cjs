@@ -21,7 +21,7 @@ const sourcesModule = new Module(sourcesPath, module);
 sourcesModule.filename = sourcesPath;
 sourcesModule.paths = module.paths;
 sourcesModule._compile(sourcesCompiled, sourcesPath);
-const { getLegalReferences } = sourcesModule.exports;
+const { getLegalReferences, getLegalSourceCoverage } = sourcesModule.exports;
 const corpus = JSON.parse(fs.readFileSync(path.join(root, "docs", "evaluation", "analysis-cases.json"), "utf8"));
 
 let passed = 0;
@@ -84,6 +84,9 @@ const citationChecks = [
   ["UAE privacy", "United Arab Emirates", "data-protection", "Articles 5–8", "/1972/download"],
   ["Egypt copyright", "Egypt", "ownership", "Article 149", "wipo.int"],
   ["UAE copyright", "United Arab Emirates", "ownership", "Article 9", "/1534/download"],
+  ["UAE confidentiality", "United Arab Emirates", "confidentiality", "Article 123", "/4011/download"],
+  ["Egypt subcontracting", "Egypt", "subcontracting", "Article 661", "eta.gov.eg"],
+  ["Egypt work quality", "Egypt", "warranties", "Articles 648 and 650", "eta.gov.eg"],
 ];
 for (const [name, jurisdiction, findingId, citation, host] of citationChecks) {
   const item = getLegalReferences(jurisdiction, [findingId])[0]?.references[0];
@@ -91,6 +94,28 @@ for (const [name, jurisdiction, findingId, citation, host] of citationChecks) {
   else {
     failed += 1;
     console.error(`FAIL ${name} citation mapping`);
+  }
+}
+const coverage = getLegalSourceCoverage();
+const expectedTopics = [...new Set(corpus.cases.map((item) => item.id))].sort();
+const coverageTopics = coverage.map((item) => item.findingId).sort();
+if (JSON.stringify(expectedTopics) === JSON.stringify(coverageTopics)) passed += 1;
+else {
+  failed += 1;
+  console.error(`FAIL source coverage registry topics do not match analyzer corpus: ${coverageTopics.join(", ")}`);
+}
+for (const item of coverage) {
+  for (const jurisdiction of ["Egypt", "United Arab Emirates"]) {
+    const state = item[jurisdiction];
+    const refs = getLegalReferences(jurisdiction, [item.findingId])[0];
+    const valid = state === "verified-reference"
+      ? refs?.references.length > 0 && refs.unavailableReason === null
+      : state === "no-verified-topic-specific-source" && refs?.references.length === 0 && Boolean(refs.unavailableReason);
+    if (valid) passed += 1;
+    else {
+      failed += 1;
+      console.error(`FAIL ${jurisdiction} ${item.findingId} missing an explicit, consistent source coverage decision`);
+    }
   }
 }
 if (getLegalReferences("I’m not sure", ["ownership"])[0]?.references.length === 0) passed += 1;
