@@ -117,7 +117,18 @@ export default function Home() {
       `${isArabic ? "طريقة الفحص" : "Screening method"}: ${analysis.method}`,
       `${isArabic ? "النتيجة" : "Summary"}: ${analysis.summary}`,
       "",
-      ...(analysis.obligations.length ? [\n        `## ${isArabic ? "التزامات مرشحة للتحقق" : "Obligation wording to verify"}`,\n        ...analysis.obligations.flatMap((item) => [\n          `- ${item.partyRole}: ${item.dutyVerb}${item.pageNumber !== null ? ` (${isArabic ? "صفحة" : "page"} ${item.pageNumber})` : ""}`,\n          `  ${item.evidence}`,\n          ...(item.amountCandidates.length ? [`  ${isArabic ? "مبالغ مرشحة" : "Amount candidates"}: ${item.amountCandidates.join(", ")}`] : []),\n          ...(item.timingCandidates.length ? [`  ${isArabic ? "مواعيد مرشحة" : "Timing candidates"}: ${item.timingCandidates.join(", ")}`] : []),\n        ]),\n        isArabic ? "هذه صياغات مرشحة وليست تأكيداً للمسؤولية القانونية." : "These are candidate wordings, not confirmation of legal responsibility.",\n        "",\n      ] : []),\n      ...(analysis.contractFacts.length ? [
+      ...(analysis.obligations.length ? [
+        `## ${isArabic ? "التزامات مرشحة للتحقق" : "Obligation wording to verify"}`,
+        ...analysis.obligations.flatMap((item) => [
+          `- ${item.partyRole}: ${item.dutyVerb}${item.pageNumber !== null ? ` (${isArabic ? "صفحة" : "page"} ${item.pageNumber})` : ""}`,
+          `  ${item.evidence}`,
+          ...(item.amountCandidates.length ? [`  ${isArabic ? "مبالغ مرشحة" : "Amount candidates"}: ${item.amountCandidates.join(", ")}`] : []),
+          ...(item.timingCandidates.length ? [`  ${isArabic ? "مواعيد مرشحة" : "Timing candidates"}: ${item.timingCandidates.join(", ")}`] : []),
+        ]),
+        isArabic ? "هذه صياغات مرشحة وليست تأكيداً للمسؤولية القانونية." : "These are candidate wordings, not confirmation of legal responsibility.",
+        "",
+      ] : []),
+      ...(analysis.contractFacts.length ? [
         `## ${isArabic ? "قيم مستخرجة للتحقق" : "Extracted values to verify"}`,
         ...analysis.contractFacts.flatMap((fact) => [
           `- ${fact.label}: ${fact.value}${fact.pageNumber !== null ? ` (${isArabic ? "صفحة" : "page"} ${fact.pageNumber})` : ""}`,
