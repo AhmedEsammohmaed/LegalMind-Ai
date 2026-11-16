@@ -28,7 +28,7 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 
 **Goal:** Turn flat text into a source-linked contract outline before making broader claims.
 
-**Progress:** The prototype extracts literal candidate amounts, dates, and payment periods in Arabic and English, with source offsets and PDF page numbers where available. The report labels these as values to verify. Party extraction, general clause segmentation, governing-law candidates, conflict handling, and user correction remain planned.
+**Progress:** The prototype extracts literal candidate amounts, dates, and payment periods in Arabic and English, with source offsets and PDF page numbers where available. It also detects a limited set of explicit party-role plus modal-action phrases in English and Arabic, showing the surrounding sentence, page, and co-located amount/timing candidates. These are wording candidates only; triggers, conditions, due-date reasoning, conflict handling, and user correction remain planned.
 
 **Deliverables:** Clause segmentation, document/contract-type suggestions, parties, dates, amounts, defined terms, and governing-law/forum candidates, each linked to page and character offsets. Unknown or conflicting values remain unknown/conflicting.
 
@@ -103,4 +103,4 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 - Baseline: implemented prototype, described above.
 - Stage 1: complete for the current prototype. The report screen uses only the actual analysis response; it includes findings, excerpts, source status, jurisdiction/language metadata, OCR caveats, and legal-use limitations. Markdown export is generated client-side in the selected analysis language. The prior fictional sample report was removed.
 - Stage 2: partially implemented. PDF extraction returns per-page text-layer/OCR provenance, OCR confidence signals, and whether the OCR page limit skipped processing. The interface exposes these details, and PDF screening findings now identify their source page when available. OCR quality benchmarks, correction workflow, and remaining extraction-quality exit criteria are still planned.
-- Stages 3–10: planned; not implemented or production-ready.
+- Stage 3: partially implemented; literal value candidates are source-linked, while contract structure, parties, conflicts, and corrections remain planned.\n- Stage 4: partially implemented; limited obligation wording candidates are exposed in the UI and report. Full obligation/deadline register and validation criteria remain planned.\n- Stages 5–10: planned; not implemented or production-ready.
