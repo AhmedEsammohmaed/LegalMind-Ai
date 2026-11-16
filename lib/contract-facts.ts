@@ -3,7 +3,7 @@ export type ContractFactCategory = "amount" | "date" | "payment-period";
 export type ContractFact = {
   id: string;
   category: ContractFactCategory;
-  label: Record<"ar" | "en", string>;
+  label: string;
   value: string;
   evidence: string;
   pageNumber: number | null;
