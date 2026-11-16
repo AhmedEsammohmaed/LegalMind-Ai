@@ -18,7 +18,7 @@ type ObligationPattern = {
 
 const patterns: ObligationPattern[] = [
   {
-    expression: /(?<party>the\s+(?:client|customer|service provider|freelancer|contractor|supplier|company|first party|second party)|(?:client|customer|service provider|freelancer|contractor|supplier|company))\s+(?<modal>shall|must|is required to)\s+(?<verb>make payment|pay|deliver|submit|provide|review|approve|notify|return|delete|assign|reimburse|maintain|protect|complete|perform|transfer|refund)\b/giu,
+    expression: /(the\s+(?:client|customer|service provider|freelancer|contractor|supplier|company|first party|second party)|(?:client|customer|service provider|freelancer|contractor|supplier|company))\s+(shall|must|is required to)\s+(make payment|pay|deliver|submit|provide|review|approve|notify|return|delete|assign|reimburse|maintain|protect|complete|perform|transfer|refund)\b/giu,
   },
   {
     expression: /(?<modal>يلتزم|يتعين على|يجب على)\s+(?<party>العميل|الزبون|مقدم الخدمة|المستقل|المقاول|المورد|الشركة|الطرف الأول|الطرف الثاني)\s+(?<verb>بسداد|بدفع|بتسليم|بتقديم|بمراجعة|باعتماد|بإخطار|بإعادة|بحذف|بالتنازل|برد|بأداء|بتنفيذ|بسداد|بدفع|تسليم|تقديم|مراجعة|إخطار|إعادة|حذف|أداء|تنفيذ)/giu,
