@@ -14,7 +14,7 @@ The corpus is in `analysis-cases.json`; the evaluator is `scripts/evaluate-legal
 
 ## Current result
 
-The current corpus checks English and Arabic rule matches, negative snippets, exact baseline finding sets, and selected legal-source mappings. It also checks that all 19 analyzer topics have an explicit source-coverage decision for Egypt and the UAE, that a citation exists whenever a topic is marked covered, and that uncovered topics return an explicit gap reason. Unknown jurisdiction returns no citations.
+The current corpus checks English and Arabic rule matches, negative snippets, exact baseline finding sets, and selected legal-source mappings. It also checks that PDF page markers are attached to matching findings and that unpaginated text does not receive an invented page number. It also checks that all 19 analyzer topics have an explicit source-coverage decision for Egypt and the UAE, that a citation exists whenever a topic is marked covered, and that uncovered topics return an explicit gap reason. Unknown jurisdiction returns no citations.
 
 ## Curated source coverage snapshot
 
