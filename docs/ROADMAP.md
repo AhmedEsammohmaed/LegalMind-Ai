@@ -100,4 +100,5 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 
 - Baseline: implemented prototype, described above.
 - Stage 1: complete for the current prototype. The report screen uses only the actual analysis response; it includes findings, excerpts, source status, jurisdiction/language metadata, OCR caveats, and legal-use limitations. Markdown export is generated client-side in the selected analysis language. The prior fictional sample report was removed.
-- Stages 2–10: planned; not implemented or production-ready.
+- Stage 2: partially implemented. PDF extraction now returns per-page text-layer/OCR provenance, OCR confidence signals, and whether the OCR page limit skipped processing. The interface exposes these details. OCR quality benchmarks, correction workflow, and remaining extraction-quality exit criteria are still planned.
+- Stages 3–10: planned; not implemented or production-ready.

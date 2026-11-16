@@ -17,8 +17,11 @@ const MAX_OCR_PAGES = 10;
 const MAX_OCR_PAGE_PIXELS = 4_500_000;
 const OCR_CONFIDENCE_WARNING_THRESHOLD = 70;
 
+type PageTextProvenance = { pageNumber: number; source: "text-layer" | "ocr" | "text-layer+ocr" | "no-text"; ocrConfidence: number | null; ocrSkippedDueToPageLimit: boolean };
+
 type ExtractedContent = {
   text: string;
+  pageProvenance: PageTextProvenance[] | null;
   pageCount: number | null;
   truncated: boolean;
   needsOcr: boolean;
@@ -103,6 +106,7 @@ async function extractPdf(bytes: Uint8Array, ocrLanguage: string): Promise<Extra
   let tempLanguageDirectory: string | undefined;
   const confidenceScores: number[] = [];
   const ocrPageNumbers: number[] = [];
+  const pageProvenance: PageTextProvenance[] = [];
   try {
     if (pdf.numPages > MAX_PDF_PAGES) {
       throw new Error("This PDF has more than 200 pages. Split it into smaller files and try again.");
@@ -131,9 +135,13 @@ async function extractPdf(bytes: Uint8Array, ocrLanguage: string): Promise<Extra
         if (piece.length > remaining) truncated = true;
       }
 
+      let pageOcrConfidence: number | null = null;
+      let ocrSkippedDueToPageLimit = false;
+      let pageSource: PageTextProvenance["source"] = pageTextLength > 0 ? "text-layer" : "no-text";
       if (!truncated && pageTextLength < 20) {
         if (ocrPageNumbers.length >= MAX_OCR_PAGES) {
           ocrPageLimitReached = true;
+          ocrSkippedDueToPageLimit = true;
         } else {
           if (!worker) {
             tempLanguageDirectory = await mkdtemp(path.join(tmpdir(), "legalmind-ocr-"));
@@ -166,11 +174,14 @@ async function extractPdf(bytes: Uint8Array, ocrLanguage: string): Promise<Extra
           if (ocrText) {
             chunks.push(`\n${ocrText}\n`);
             characterCount += ocrText.length;
+            pageSource = pageTextLength > 0 ? "text-layer+ocr" : "ocr";
           }
+          pageOcrConfidence = result.data.confidence;
           confidenceScores.push(result.data.confidence);
           ocrPageNumbers.push(pageNumber);
         }
       }
+      pageProvenance.push({ pageNumber, source: pageSource, ocrConfidence: pageOcrConfidence, ocrSkippedDueToPageLimit });
       page.cleanup();
       if (truncated) break;
       chunks.push("\n");
@@ -181,6 +192,7 @@ async function extractPdf(bytes: Uint8Array, ocrLanguage: string): Promise<Extra
       : null;
     return {
       text: text.slice(0, MAX_EXTRACTED_CHARACTERS),
+      pageProvenance,
       pageCount: pdf.numPages,
       truncated: truncated || characterCount > MAX_EXTRACTED_CHARACTERS,
       needsOcr: text.length === 0,
@@ -207,6 +219,7 @@ async function extractDocx(bytes: Uint8Array): Promise<ExtractedContent> {
   const truncated = source.length > MAX_EXTRACTED_CHARACTERS;
   return {
     text: source.slice(0, MAX_EXTRACTED_CHARACTERS),
+    pageProvenance: null,
     pageCount: null,
     truncated,
     needsOcr: source.length === 0,
