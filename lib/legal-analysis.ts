@@ -5,6 +5,7 @@ export type Finding = {
   priority: "Review";
   title: string;
   evidence: string;
+  pageNumber: number | null;
   explanation: string;
   question: string;
 };
@@ -56,6 +57,13 @@ function evidenceFor(text: string, index: number) {
   return evidence.slice(0, 700);
 }
 
+function pageNumberFor(text: string, index: number): number | null {
+  const markerStart = text.lastIndexOf("[Page ", index);
+  if (markerStart < 0) return null;
+  const marker = /^\[Page\s+(\d+)\]/u.exec(text.slice(markerStart, index));
+  return marker ? Number(marker[1]) : null;
+}
+
 export function analyzeContract(text: string, language: AnalysisLanguage): Finding[] {
   const findings = rules.flatMap((rule) => {
     const match = rule.match.exec(text);
@@ -68,6 +76,7 @@ export function analyzeContract(text: string, language: AnalysisLanguage): Findi
       priority: rule.priority,
       title: rule.title[language],
       evidence,
+      pageNumber: pageNumberFor(text, match.index),
       explanation: rule.explanation[language],
       question: rule.question[language],
     }];
