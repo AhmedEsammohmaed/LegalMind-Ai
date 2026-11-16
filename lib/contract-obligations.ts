@@ -57,12 +57,12 @@ export function extractObligationCandidates(text: string, facts: ContractFact[])
   for (const { expression } of patterns) {
     expression.lastIndex = 0;
     for (const match of text.matchAll(expression)) {
-      const groups = match.groups;
       const startOffset = match.index ?? 0;
       const matchEnd = startOffset + match[0].length;
       const bounds = sentenceBounds(text, startOffset, matchEnd);
-      const partyRole = groups?.party?.trim();
-      const dutyVerb = groups?.verb?.trim();
+      const isArabic = expression.source.includes("يلتزم");
+      const partyRole = (isArabic ? match[2] : match[1])?.trim();
+      const dutyVerb = (isArabic ? match[3] : match[3])?.trim();
       if (!partyRole || !dutyVerb) continue;
 
       const key = `${startOffset}:${match[0].toLocaleLowerCase()}`;
