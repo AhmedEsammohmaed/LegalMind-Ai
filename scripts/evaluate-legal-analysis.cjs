@@ -51,6 +51,21 @@ for (const item of corpus.negativeCases) {
   check(item.name, item.en, "en", null);
   check(item.name, item.ar, "ar", null);
 }
+
+const pageFinding = analyzeContract("[Page 4]\\nThe scope of work lists the deliverables.", "en")
+  .find((finding) => finding.id === "scope");
+if (pageFinding?.pageNumber === 4) passed += 1;
+else {
+  failed += 1;
+  console.error("FAIL PDF page marker was not attached to the matching finding");
+}
+const unpaginatedFinding = analyzeContract("The scope of work lists the deliverables.", "en")
+  .find((finding) => finding.id === "scope");
+if (unpaginatedFinding?.pageNumber === null) passed += 1;
+else {
+  failed += 1;
+  console.error("FAIL finding without a PDF page marker should not invent a page number");
+}
 for (const [language, file] of [
   ["en", "freelance_contract_english.txt"],
   ["ar", "freelance_contract_arabic.txt"],
