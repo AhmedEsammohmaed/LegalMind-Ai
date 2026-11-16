@@ -196,3 +196,52 @@
   color: var(--muted, #667085);
   font-size: 0.82rem;
 }
+
+
+.finding-source-page {
+  margin: 0 0 0.4rem;
+  color: var(--muted, #667085);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+
+.contract-facts-card {
+  margin: 0 0 1rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--line, #e4e7ec);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+}
+
+.contract-facts-card h2 {
+  margin: 0.65rem 0 0.9rem;
+  font-size: 1.15rem;
+}
+
+.contract-facts-card ul {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding-inline-start: 1.2rem;
+}
+
+.contract-facts-card li > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.contract-facts-card li > p,
+.fact-limit-note {
+  margin: 0.25rem 0 0;
+  color: var(--muted, #667085);
+  font-size: 0.86rem;
+}
+
+.fact-source-page {
+  color: var(--muted, #667085);
+  font-size: 0.78rem;
+  font-weight: 600;
+}

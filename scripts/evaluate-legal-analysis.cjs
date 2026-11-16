@@ -13,6 +13,24 @@ loaded.filename = sourcePath;
 loaded.paths = module.paths;
 loaded._compile(compiled, sourcePath);
 const { analyzeContract } = loaded.exports;
+const factsPath = path.join(root, "lib", "contract-facts.ts");
+const factsCompiled = ts.transpileModule(fs.readFileSync(factsPath, "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+}).outputText;
+const factsModule = new Module(factsPath, module);
+factsModule.filename = factsPath;
+factsModule.paths = module.paths;
+factsModule._compile(factsCompiled, factsPath);
+const { extractContractFacts } = factsModule.exports;
+const obligationsPath = path.join(root, "lib", "contract-obligations.ts");
+const obligationsCompiled = ts.transpileModule(fs.readFileSync(obligationsPath, "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+}).outputText;
+const obligationsModule = new Module(obligationsPath, module);
+obligationsModule.filename = obligationsPath;
+obligationsModule.paths = module.paths;
+obligationsModule._compile(obligationsCompiled, obligationsPath);
+const { extractObligationCandidates } = obligationsModule.exports;
 const sourcesPath = path.join(root, "lib", "legal-sources.ts");
 const sourcesCompiled = ts.transpileModule(fs.readFileSync(sourcesPath, "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
@@ -51,6 +69,22 @@ for (const item of corpus.negativeCases) {
   check(item.name, item.en, "en", null);
   check(item.name, item.ar, "ar", null);
 }
+
+const pageFinding = analyzeContract("[Page 4]\
+The scope of work lists the deliverables.", "en")
+  .find((finding) => finding.id === "scope");
+if (pageFinding?.pageNumber === 4) passed += 1;
+else {
+  failed += 1;
+  console.error("FAIL PDF page marker was not attached to the matching finding");
+}
+const unpaginatedFinding = analyzeContract("The scope of work lists the deliverables.", "en")
+  .find((finding) => finding.id === "scope");
+if (unpaginatedFinding?.pageNumber === null) passed += 1;
+else {
+  failed += 1;
+  console.error("FAIL finding without a PDF page marker should not invent a page number");
+}
 for (const [language, file] of [
   ["en", "freelance_contract_english.txt"],
   ["ar", "freelance_contract_arabic.txt"],
@@ -78,6 +112,42 @@ for (const [language, file] of [
     console.error(`FAIL ${language.toUpperCase()} baseline fixture unexpected findings: ${unexpected.join(", ")}`);
   } else passed += 1;
 }
+
+const englishFacts = extractContractFacts("[Page 2]\
+Payment: AED 1,250. Payment is due within 30 days by 2026-04-01.", "en");
+if (
+  englishFacts.some((fact) => fact.category === "amount" && fact.value === "AED 1,250" && fact.pageNumber === 2) &&
+  englishFacts.some((fact) => fact.category === "payment-period" && fact.value.endsWith("within 30 days") && fact.pageNumber === 2) &&
+  englishFacts.some((fact) => fact.category === "date" && fact.value === "2026-04-01" && fact.pageNumber === 2)
+) passed += 1;
+else {
+  failed += 1;
+  console.error("FAIL English amount/date/payment-period extraction or page reference:", JSON.stringify(englishFacts));
+}
+const arabicFacts = extractContractFacts("[Page 3]\
+يلتزم العميل بسداد ٥٠٠٠ جنيه مصري خلال ١٥ يوماً قبل ٣٠/٠٤/٢٠٢٦.", "ar");
+if (
+  arabicFacts.some((fact) => fact.category === "amount" && fact.pageNumber === 3) &&
+  arabicFacts.some((fact) => fact.category === "payment-period" && fact.pageNumber === 3) &&
+  arabicFacts.some((fact) => fact.category === "date" && fact.pageNumber === 3)
+) passed += 1;
+else {
+  failed += 1;
+  console.error("FAIL Arabic amount/date/payment-period extraction or page reference:", JSON.stringify(arabicFacts));
+}
+
+const obligationEnglishText = "[Page 2]\
+The Client shall pay AED 1,250 within 30 days.";
+const obligationEnglishFacts = extractContractFacts(obligationEnglishText, "en");
+const obligationEnglish = extractObligationCandidates(obligationEnglishText, obligationEnglishFacts);
+if (obligationEnglish.length === 1 && obligationEnglish[0].partyRole.toLowerCase() === "the client" && obligationEnglish[0].dutyVerb === "pay" && obligationEnglish[0].pageNumber === 2 && obligationEnglish[0].amountCandidates.includes("AED 1,250") && obligationEnglish[0].timingCandidates.some((value) => value.includes("30 days")) && obligationEnglish[0].evidence.includes("shall pay")) passed += 1;
+else { failed += 1; console.error("FAIL English obligation candidate evidence, page, or related facts:", JSON.stringify(obligationEnglish)); }
+const obligationArabicText = "[Page 3]\
+يلتزم العميل بسداد ٥٠٠٠ جنيه مصري خلال ١٥ يوماً.";
+const obligationArabicFacts = extractContractFacts(obligationArabicText, "ar");
+const obligationArabic = extractObligationCandidates(obligationArabicText, obligationArabicFacts);
+if (obligationArabic.length === 1 && obligationArabic[0].partyRole === "العميل" && obligationArabic[0].dutyVerb === "بسداد" && obligationArabic[0].pageNumber === 3 && obligationArabic[0].amountCandidates.length > 0 && obligationArabic[0].timingCandidates.length > 0 && obligationArabic[0].evidence.includes("يلتزم العميل")) passed += 1;
+else { failed += 1; console.error("FAIL Arabic obligation candidate evidence, page, or related facts:", JSON.stringify(obligationArabic)); }
 
 const citationChecks = [
   ["Egypt privacy", "Egypt", "data-protection", "Articles 4–5", "escc.gov.eg"],
