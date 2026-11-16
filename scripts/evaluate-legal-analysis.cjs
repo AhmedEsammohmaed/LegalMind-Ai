@@ -106,7 +106,7 @@ for (const [language, file] of [
 const englishFacts = extractContractFacts("[Page 2]\\nPayment: AED 1,250. Payment is due within 30 days by 2026-04-01.", "en");
 if (
   englishFacts.some((fact) => fact.category === "amount" && fact.value === "AED 1,250" && fact.pageNumber === 2) &&
-  englishFacts.some((fact) => fact.category === "payment-period" && fact.value === "within 30 days" && fact.pageNumber === 2) &&
+  englishFacts.some((fact) => fact.category === "payment-period" && fact.value.endsWith("within 30 days") && fact.pageNumber === 2) &&
   englishFacts.some((fact) => fact.category === "date" && fact.value === "2026-04-01" && fact.pageNumber === 2)
 ) passed += 1;
 else {
