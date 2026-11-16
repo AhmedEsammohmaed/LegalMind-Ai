@@ -99,5 +99,5 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 ## Status
 
 - Baseline: implemented prototype, described above.
-- Stage 1: first increment implemented: client-side Markdown download from the actual analysis response, with evidence, citation/source status, response-language output, and limits. Remaining report design and workflow refinements are open.
+- Stage 1: complete for the current prototype. The report screen uses only the actual analysis response; it includes findings, excerpts, source status, jurisdiction/language metadata, OCR caveats, and legal-use limitations. Markdown export is generated client-side in the selected analysis language. The prior fictional sample report was removed.
 - Stages 2–10: planned; not implemented or production-ready.
