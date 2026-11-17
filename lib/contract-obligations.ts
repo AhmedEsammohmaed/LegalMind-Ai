@@ -8,6 +8,8 @@ export type ObligationCandidate = {
   pageNumber: number | null;
   amountCandidates: string[];
   timingCandidates: string[];
+  triggerCandidates: string[];
+  conditionCandidates: string[];
   startOffset: number;
   endOffset: number;
 };
@@ -46,6 +48,21 @@ function sentenceBounds(text: string, start: number, end: number) {
   return { start: sentenceStart, end: sentenceEnd };
 }
 
+function cuePhrases(sentence: string, cues: RegExp): string[] {
+  const results = new Set<string>();
+  cues.lastIndex = 0;
+  for (const match of sentence.matchAll(cues)) {
+    const phrase = match[0].trim().replace(/\s+/gu, " ").slice(0, 180);
+    if (phrase) results.add(phrase);
+  }
+  return [...results].slice(0, 5);
+}
+
+const englishTriggerCues = /\b(?:upon|after|following|once|when|before)\b[^,.;!?]{0,140}/giu;
+const englishConditionCues = /\b(?:if|unless|provided that|subject to)\b[^,.;!?]{0,140}/giu;
+const arabicTriggerCues = /(?:عند|بعد|بمجرد|قبل|حين|حالما)[^،؛.!؟]{0,140}/gu;
+const arabicConditionCues = /(?:إذا|ما لم|بشرط أن|رهناً بـ|شريطة أن)[^،؛.!؟]{0,140}/gu;
+
 /**
  * Finds explicit party-role + modal-verb wording. These candidates are not
  * legal interpretations and do not resolve what the parties intended.
@@ -71,16 +88,19 @@ export function extractObligationCandidates(text: string, facts: ContractFact[])
       const relatedFacts = facts.filter((fact) =>
         fact.startOffset >= bounds.start && fact.endOffset <= bounds.end,
       );
+      const evidence = text.slice(bounds.start, bounds.end).trim().slice(0, 700);
       obligations.push({
         id: key,
         partyRole,
         dutyVerb,
-        evidence: text.slice(bounds.start, bounds.end).trim().slice(0, 700),
+        evidence,
         pageNumber: pageNumberFor(text, startOffset),
         amountCandidates: relatedFacts.filter((fact) => fact.category === "amount").map((fact) => fact.value),
         timingCandidates: relatedFacts
           .filter((fact) => fact.category === "date" || fact.category === "payment-period")
           .map((fact) => fact.value),
+        triggerCandidates: cuePhrases(evidence, isArabic ? arabicTriggerCues : englishTriggerCues),
+        conditionCandidates: cuePhrases(evidence, isArabic ? arabicConditionCues : englishConditionCues),
         startOffset: bounds.start,
         endOffset: bounds.end,
       });
