@@ -149,6 +149,17 @@ const obligationArabic = extractObligationCandidates(obligationArabicText, oblig
 if (obligationArabic.length === 1 && obligationArabic[0].partyRole === "العميل" && obligationArabic[0].dutyVerb === "بسداد" && obligationArabic[0].pageNumber === 3 && obligationArabic[0].amountCandidates.length > 0 && obligationArabic[0].timingCandidates.length > 0 && obligationArabic[0].evidence.includes("يلتزم العميل")) passed += 1;
 else { failed += 1; console.error("FAIL Arabic obligation candidate evidence, page, or related facts:", JSON.stringify(obligationArabic)); }
 
+const triggeredEnglishText = "[Page 8]\\nThe Client shall pay the fee within 30 days after receipt of the invoice if the work is accepted.";
+const triggeredEnglishFacts = extractContractFacts(triggeredEnglishText, "en");
+const triggeredEnglish = extractObligationCandidates(triggeredEnglishText, triggeredEnglishFacts);
+if (triggeredEnglish[0]?.triggerCandidates.some((value) => value.toLowerCase().includes("after receipt")) && triggeredEnglish[0]?.conditionCandidates.some((value) => value.toLowerCase().startsWith("if")) && triggeredEnglish[0]?.pageNumber === 8) passed += 1;
+else { failed += 1; console.error("FAIL English trigger/condition wording detection:", JSON.stringify(triggeredEnglish)); }
+const triggeredArabicText = "[Page 9]\\nيلتزم العميل بسداد الأجر خلال ٣٠ يوماً بعد استلام الفاتورة إذا تم قبول العمل.";
+const triggeredArabicFacts = extractContractFacts(triggeredArabicText, "ar");
+const triggeredArabic = extractObligationCandidates(triggeredArabicText, triggeredArabicFacts);
+if (triggeredArabic[0]?.triggerCandidates.some((value) => value.includes("بعد استلام")) && triggeredArabic[0]?.conditionCandidates.some((value) => value.startsWith("إذا")) && triggeredArabic[0]?.pageNumber === 9) passed += 1;
+else { failed += 1; console.error("FAIL Arabic trigger/condition wording detection:", JSON.stringify(triggeredArabic)); }
+
 const citationChecks = [
   ["Egypt privacy", "Egypt", "data-protection", "Articles 4–5", "escc.gov.eg"],
   ["UAE privacy", "United Arab Emirates", "data-protection", "Articles 5–8", "/1972/download"],
