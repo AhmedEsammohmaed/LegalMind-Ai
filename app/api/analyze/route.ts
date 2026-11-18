@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     jurisdiction,
     findings,
     contractFacts,
+    obligations,
     legalReferences,
     summary: language === "ar"
       ? findings.length ? `تم رصد ${findings.length} بنداً يستحق المراجعة.` : "لم ترصد قواعد الفحص الأولي بنوداً مطابقة. هذا لا يعني خلو العقد من المخاطر."
