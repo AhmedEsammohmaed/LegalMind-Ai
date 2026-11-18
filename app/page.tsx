@@ -64,10 +64,27 @@ export default function Home() {
   const [mobileNav, setMobileNav] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
+  const [negotiationOpen, setNegotiationOpen] = useState(false);
+  const [negotiationFindingId, setNegotiationFindingId] = useState("");
+  const [negotiationGoal, setNegotiationGoal] = useState("");
+  const [negotiationProposal, setNegotiationProposal] = useState("");
+  const [negotiationRationale, setNegotiationRationale] = useState("");
+  const [negotiationTradeoffs, setNegotiationTradeoffs] = useState("");
+  const [negotiationQuestions, setNegotiationQuestions] = useState("");
 
   useEffect(() => () => {
     if (originalUrl) URL.revokeObjectURL(originalUrl);
   }, [originalUrl]);
+
+  function resetNegotiation() {
+    setNegotiationOpen(false);
+    setNegotiationFindingId("");
+    setNegotiationGoal("");
+    setNegotiationProposal("");
+    setNegotiationRationale("");
+    setNegotiationTradeoffs("");
+    setNegotiationQuestions("");
+  }
 
   function acceptFile(candidate?: File) {
     if (!candidate) return;
@@ -86,6 +103,7 @@ export default function Home() {
     setExtraction(null);
     setShowReport(false);
     setOcrVerified(false);
+    resetNegotiation();
   }
 
   function onFileChange(event: ChangeEvent<HTMLInputElement>) { acceptFile(event.target.files?.[0]); }
@@ -179,6 +197,50 @@ export default function Home() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  function downloadNegotiationBrief() {
+    if (!analysis || !extraction || !negotiationGoal.trim() || !negotiationProposal.trim()) return;
+    const finding = analysis.findings.find((item) => item.id === negotiationFindingId) ?? analysis.findings[0];
+    if (!finding) return;
+    const isArabic = analysis.language === "ar";
+    const referenceItems = analysis.legalReferences.find((item) => item.findingId === finding.id)?.references ?? [];
+    const lines = [
+      isArabic ? "# مذكرة نقاش تفاوضي" : "# Negotiation discussion brief",
+      "",
+      `${isArabic ? "المستند" : "Document"}: ${extraction.fileName}`,
+      `${isArabic ? "الاختصاص المختار" : "Selected jurisdiction"}: ${analysis.jurisdiction}`,
+      `${isArabic ? "البند" : "Clause topic"}: ${finding.title}`,
+      `${isArabic ? "الصفحة" : "Source page"}: ${finding.pageNumber ?? (isArabic ? "غير محددة" : "Not available")}`,
+      "",
+      `## ${isArabic ? "النص المستخرج" : "Extracted wording"}`,
+      finding.evidence,
+      "",
+      `## ${isArabic ? "هدفك في التفاوض" : "Your negotiation goal"}`,
+      negotiationGoal.trim(),
+      `## ${isArabic ? "صياغة اقترحتها أنت" : "Your proposed wording"}`,
+      negotiationProposal.trim(),
+      `## ${isArabic ? "سبب الاقتراح" : "Why you are proposing this"}`,
+      negotiationRationale.trim() || (isArabic ? "لم يحدد." : "Not provided."),
+      `## ${isArabic ? "المقايضات أو الآثار" : "Tradeoffs or effects to discuss"}`,
+      negotiationTradeoffs.trim() || (isArabic ? "لم تحدد." : "Not provided."),
+      `## ${isArabic ? "أسئلة ونقاط غير محسومة" : "Questions and unresolved points"}`,
+      negotiationQuestions.trim() || (isArabic ? "لم تحدد." : "Not provided."),
+      "",
+      ...(referenceItems.length ? [`## ${isArabic ? "روابط بحثية مرتبطة بالبند" : "Research links connected to this topic"}`, ...referenceItems.map((item) => `- [${item.title} · ${item.citation}](${item.url})`), ""] : []),
+      `## ${isArabic ? "مهم" : "Important"}`,
+      isArabic
+        ? "هذه مذكرة تفاوض من إعداد المستخدم وليست صياغة مولدة أو معتمدة قانونياً. لم يتم التحقق من انطباق القانون أو صلاحية الاقتراح. راجع النص الأصلي واستشر محامياً مؤهلاً قبل اعتماد أي تعديل."
+        : "This discussion brief contains wording provided by the user; it is not AI-generated or legally approved. Applicable law and proposal validity were not verified. Check the original and consult a qualified lawyer before adopting any change.",
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const safeName = extraction.fileName.replace(/\.[^.]+$/u, "").replace(/[^\p{L}\p{N}-]+/gu, "-").replace(/^-|-$/gu, "").slice(0, 80) || "contract";
+    link.href = url;
+    link.download = `${safeName}-negotiation-brief.md`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   async function extractContract() {
     if (!file) return;
     setIsExtracting(true);
@@ -194,6 +256,7 @@ export default function Home() {
       setAnalysis(null);
       setShowReport(false);
       setOcrVerified(false);
+      resetNegotiation();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       setExtractError(error instanceof Error ? error.message : "The extraction request failed. Try again.");
@@ -207,6 +270,7 @@ export default function Home() {
     setIsAnalyzing(true);
     setAnalysisError("");
     setAnalysis(null);
+    resetNegotiation();
     const selectedLanguage = responseLanguage === "auto" ? detectAnalysisLanguage(extraction.text) : responseLanguage;
     try {
       const response = await fetch("/api/analyze", {
@@ -228,6 +292,7 @@ export default function Home() {
   const effectiveResponseLanguage = responseLanguage === "auto"
     ? detectAnalysisLanguage(extraction?.text ?? "") === "ar" ? "Arabic" : "English"
     : responseLanguage === "ar" ? "Arabic" : "English";
+  const negotiationFinding = analysis?.findings.find((finding) => finding.id === negotiationFindingId) ?? analysis?.findings[0];
 
   return (
     <main className="app-shell">
@@ -255,11 +320,12 @@ export default function Home() {
           </> : showReport ? <>
             <button className="back-link" onClick={() => setShowReport(false)}><Icon name="back" size={17}/> {analysis?.language === "ar" ? "العودة إلى النص المستخرج" : "Back to extracted text"}</button>
             {analysis && extraction ? <>
-              <div className="report-title-row"><div><div className="eyebrow"><span className="eyebrow-line"/> {analysis.language === "ar" ? "تقرير مراجعة العقد" : "CONTRACT REVIEW REPORT"}</div><h1>{analysis.language === "ar" ? <>تقرير <em>المراجعة.</em></> : <>Review <em>report.</em></>}</h1><p className="welcome-copy">{analysis.language === "ar" ? "فحص أولي مبني على النص المستخرج من مستندك." : "Initial screening based on text extracted from your document."}</p></div><button className="secondary-button" onClick={downloadReviewReport}>{analysis.language === "ar" ? "تنزيل التقرير" : "Download report"}</button></div>
+              <div className="report-title-row"><div><div className="eyebrow"><span className="eyebrow-line"/> {analysis.language === "ar" ? "تقرير مراجعة العقد" : "CONTRACT REVIEW REPORT"}</div><h1>{analysis.language === "ar" ? <>تقرير <em>المراجعة.</em></> : <>Review <em>report.</em></>}</h1><p className="welcome-copy">{analysis.language === "ar" ? "فحص أولي مبني على النص المستخرج من مستندك." : "Initial screening based on text extracted from your document."}</p></div><div className="report-actions"><button className="secondary-button" disabled={!analysis.findings.length} onClick={() => setNegotiationOpen(!negotiationOpen)}>{analysis.language === "ar" ? "إعداد مذكرة تفاوض" : "Prepare negotiation brief"}</button><button className="secondary-button" onClick={downloadReviewReport}>{analysis.language === "ar" ? "تنزيل التقرير" : "Download report"}</button></div></div>
               <div className="processing-notice"><span className="processing-notice-icon"><Icon name="shield" size={17}/></span><div><strong>{analysis.language === "ar" ? "نتائج فحص أولي وليست رأياً قانونياً." : "These are initial screening results, not legal advice."}</strong><p>{analysis.language === "ar" ? "راجع النص الأصلي والمراجع المرتبطة، واستشر محامياً مؤهلاً قبل اتخاذ قرار قانوني." : "Check the original text and linked references, and consult a qualified lawyer before making a legal decision."}</p></div></div>
               <section className="report-meta-card extraction-meta"><div className="report-file-icon"><Icon name="file" size={19}/></div><div className="report-file-name"><strong>{extraction.fileName}</strong><span>{extraction.fileType} · {extraction.text.length.toLocaleString()} {analysis.language === "ar" ? "حرفاً مستخرجاً" : "extracted characters"}</span></div><div className="meta-divider"/><div className="report-law"><span>{analysis.language === "ar" ? "الاختصاص المختار" : "SELECTED JURISDICTION"}</span><strong>{analysis.jurisdiction}</strong></div><div className="report-date"><span>{analysis.language === "ar" ? "لغة التقرير" : "REPORT LANGUAGE"}</span><strong>{analysis.language === "ar" ? "العربية" : "English"}</strong></div></section>
               <section className="analysis-results" dir={analysis.language === "ar" ? "rtl" : "ltr"} lang={analysis.language}>{analysis.contractFacts.length ? <section className="contract-facts-card"><div className="step-label"><span>02</span> {analysis.language === "ar" ? "قيم مستخرجة" : "EXTRACTED VALUES"}</div><h2>{analysis.language === "ar" ? "تحقق من المبالغ والتواريخ والمهل" : "Check amounts, dates, and payment periods"}</h2><ul>{analysis.contractFacts.map((fact) => <li key={fact.id}><div><strong>{fact.label}: {fact.value}</strong>{fact.pageNumber !== null && <span className="fact-source-page">{analysis.language === "ar" ? `الصفحة ${fact.pageNumber}` : `Page ${fact.pageNumber}`}</span>}</div><p>{fact.evidence}</p></li>)}</ul><p className="fact-limit-note">{analysis.language === "ar" ? "هذه قيم مرشحة مستخرجة من النص وليست تأكيداً لمعناها أو انطباقها. راجع المستند الأصلي." : "These are candidate values found in the text, not confirmation of their meaning or applicability. Check the original document."}</p></section> : null}
             {analysis.obligations.length ? <section className="contract-facts-card"><div className="step-label"><span>03</span> {analysis.language === "ar" ? "التزامات مرشحة" : "OBLIGATION CANDIDATES"}</div><h2>{analysis.language === "ar" ? "راجع من يفعل ماذا ومتى" : "Review who does what and when"}</h2><ul>{analysis.obligations.map((item) => <li key={item.id}><div><strong>{item.partyRole}: {item.dutyVerb}</strong>{item.pageNumber !== null && <span className="fact-source-page">{analysis.language === "ar" ? `الصفحة ${item.pageNumber}` : `Page ${item.pageNumber}`}</span>}</div><p>{item.evidence}</p>{item.amountCandidates.length > 0 && <p>{analysis.language === "ar" ? "مبالغ مرشحة" : "Amount candidates"}: {item.amountCandidates.join(", ")}</p>}{item.timingCandidates.length > 0 && <p>{analysis.language === "ar" ? "مواعيد مرشحة" : "Timing candidates"}: {item.timingCandidates.join(", ")}</p>}{item.triggerCandidates.length > 0 && <p>{analysis.language === "ar" ? "عبارات بدء مرشحة" : "Trigger wording"}: {item.triggerCandidates.join(" | ")}</p>}{item.conditionCandidates.length > 0 && <p>{analysis.language === "ar" ? "شروط مرشحة" : "Condition wording"}: {item.conditionCandidates.join(" | ")}</p>}</li>)}</ul><p className="fact-limit-note">{analysis.language === "ar" ? "هذه صياغات مرشحة مستخرجة آلياً وليست تأكيداً للمسؤولية القانونية أو تفسيراً للالتزام. راجع النص الأصلي." : "These are automatically detected candidate wordings, not confirmation or interpretation of legal responsibility. Check the original text."}</p></section> : null}\n            <div className="analysis-results-heading"><div><div className="step-label"><span>01</span> {analysis.language === "ar" ? "فحص أولي" : "INITIAL SCREENING"}</div><h2>{analysis.language === "ar" ? "بنود تستحق المراجعة" : "Items to review"}</h2></div><span className="analysis-count">{analysis.findings.length} {analysis.language === "ar" ? "بنود" : "findings"}</span></div><p className="analysis-summary">{analysis.summary}</p><p className="research-verification-note">{analysis.language === "ar" ? "لم يُسترجع نص أي مادة قانونية إلى النظام؛ المراجع روابط بحثية فقط، ولم يتم التحقق من أي ادعاء قانوني أو انطباقه." : "No legal provision text was retrieved into the system. Citations are research links only; no legal claim or applicability has been verified."}</p>{analysis.findings.length ? <div className="analysis-findings">{analysis.findings.map((finding) => { const referenceResult = analysis.legalReferences.find((entry) => entry.findingId === finding.id); return <article className="analysis-finding" key={finding.id}><div className="finding-topline"><span className="finding-category">{finding.category}</span><span className="finding-priority priority-review">{analysis.language === "ar" ? "للمراجعة" : "Review"}</span></div><h3>{finding.title}</h3><p className="finding-match">{analysis.language === "ar" ? "العبارة المطابقة:" : "Matched wording:"} <q>{finding.matchedText}</q></p>{finding.pageNumber !== null && <p className="finding-source-page">{analysis.language === "ar" ? `الصفحة ${finding.pageNumber}` : `Source page ${finding.pageNumber}`}</p>}<blockquote>{finding.evidence || (analysis.language === "ar" ? "لم يتوفر اقتباس واضح." : "No clear evidence quote was available.")}</blockquote><p>{finding.explanation}</p><div className="finding-question"><strong>{analysis.language === "ar" ? "سؤال للمناقشة" : "Question to discuss"}</strong><p>{finding.question}</p></div><div className="legal-references"><strong>{analysis.language === "ar" ? "مراجع قانونية مرتبطة — للاستدلال البحثي فقط" : "Related legal references — research leads only"}</strong>{referenceResult?.references.length ? referenceResult.references.map((reference) => <div className="legal-reference" key={`${reference.url}-${reference.citation}`}><a href={reference.url} target="_blank" rel="noreferrer">{reference.title} · {reference.citation} <span aria-label="opens in new tab">↗</span></a><span>{analysis.language === "ar" ? "تاريخ السريان" : "Effective"}: {reference.effectiveFrom} · {reference.language} · {analysis.language === "ar" ? "تم التحقق من المصدر" : "Source checked"}: {reference.checkedOn}</span><details><summary>{analysis.language === "ar" ? "حالة المصدر وحدوده" : "Source status and limits"}</summary><p>{analysis.language === "ar" ? `${reference.sourceNoteAr} ${reference.versionDescriptionAr}. النطاق: ${reference.territorialScopeAr}. الجهة: ${reference.issuingAuthorityAr}. تاريخ التحقق من الحالة: ${reference.statusCheckedOn}.` : `${reference.sourceNote} ${reference.note} Version: ${reference.versionDescription}; territory: ${reference.territorialScope}; authority: ${reference.issuingAuthority}; status checked: ${reference.statusCheckedOn}.`}</p>{reference.statusSourceUrl && <a href={reference.statusSourceUrl} target="_blank" rel="noreferrer">{analysis.language === "ar" ? "مصدر حالة التشريع" : "Source for status metadata"}</a>}</details></div>) : <p className="no-legal-reference">{analysis.language === "ar" ? "لم يتم التحقق من مصدر محدد لهذا الموضوع في الاختصاص المختار ضمن السجل الحالي." : referenceResult?.unavailableReason}</p>}</div></article>; })}</div> : <p className="analysis-empty">{analysis.language === "ar" ? "لم تعثر قواعد الفحص على الأنماط المحددة. قد تظل هناك مسائل أخرى تستحق المراجعة." : "The screening rules did not find these selected patterns. Other issues may still need review."}</p>}<footer className="analysis-disclaimer">{analysis.disclaimer}</footer></section>
+              {negotiationOpen && <section className="negotiation-workspace" dir={analysis.language === "ar" ? "rtl" : "ltr"} lang={analysis.language}><div className="step-label"><span>08</span> {analysis.language === "ar" ? "دعم التفاوض" : "NEGOTIATION SUPPORT"}</div><h2>{analysis.language === "ar" ? "صغ اقتراحك أنت" : "Prepare your own proposal"}</h2><p className="negotiation-safety-note">{analysis.language === "ar" ? "لا ينشئ النظام صياغة قانونية. استخدم حقولك لتوثيق هدفك ونصك المقترح، ثم راجعه مع محامٍ مؤهل قبل إرساله." : "The system does not draft legal wording. Use these fields to record your goal and proposed text, then ask a qualified lawyer to review it before sending."}</p><label>{analysis.language === "ar" ? "البند المرتبط" : "Related finding"}<select value={negotiationFinding?.id ?? ""} onChange={(event) => { setNegotiationFindingId(event.target.value); setNegotiationGoal(""); setNegotiationProposal(""); setNegotiationRationale(""); setNegotiationTradeoffs(""); setNegotiationQuestions(""); }}>{analysis.findings.map((finding) => <option key={finding.id} value={finding.id}>{finding.title}</option>)}</select></label><div className="negotiation-fields"><label>{analysis.language === "ar" ? "ما النتيجة التي تريدها؟" : "What outcome do you want?"}<textarea value={negotiationGoal} onChange={(event) => setNegotiationGoal(event.target.value)} rows={3} maxLength={2000}/></label><label>{analysis.language === "ar" ? "صياغتك المقترحة" : "Your proposed wording"}<textarea value={negotiationProposal} onChange={(event) => setNegotiationProposal(event.target.value)} rows={5} maxLength={6000}/></label><label>{analysis.language === "ar" ? "لماذا تقترح هذا التغيير؟" : "Why are you proposing this change?"}<textarea value={negotiationRationale} onChange={(event) => setNegotiationRationale(event.target.value)} rows={3} maxLength={2000}/></label><label>{analysis.language === "ar" ? "ما المقايضات أو الآثار التي تريد مناقشتها؟" : "What tradeoffs or effects do you want to discuss?"}<textarea value={negotiationTradeoffs} onChange={(event) => setNegotiationTradeoffs(event.target.value)} rows={3} maxLength={2000}/></label><label>{analysis.language === "ar" ? "أسئلة أو نقاط لم تُحسم" : "Questions or unresolved points"}<textarea value={negotiationQuestions} onChange={(event) => setNegotiationQuestions(event.target.value)} rows={3} maxLength={2000}/></label></div>{negotiationFinding && <div className="negotiation-comparison"><article><h3>{analysis.language === "ar" ? "النص المستخرج" : "Extracted wording"}</h3><blockquote>{negotiationFinding.evidence}</blockquote></article><article><h3>{analysis.language === "ar" ? "اقتراحك" : "Your proposal"}</h3><p>{negotiationProposal || (analysis.language === "ar" ? "اكتب صياغتك هنا؛ لن يملأ النظام هذا الحقل." : "Write your proposed wording here; the system will not fill this field.")}</p></article></div>}<button className="primary-button negotiation-download" disabled={!negotiationGoal.trim() || !negotiationProposal.trim()} onClick={downloadNegotiationBrief}>{analysis.language === "ar" ? "تنزيل مذكرة النقاش" : "Download discussion brief"}</button></section>}
               {(extraction.ocrUsed || extraction.truncated || extraction.ocrPageLimitReached) && <p className="report-disclaimer" dir={analysis.language === "ar" ? "rtl" : "ltr"}>{analysis.language === "ar" ? "قد يكون النص المستخرج ناقصاً أو متأثراً بأخطاء OCR. راجع المستند الأصلي، خصوصاً الأسماء والمبالغ والتواريخ والنفي." : "Extracted text may be incomplete or affected by OCR errors. Check the original document, especially names, amounts, dates, and negations."}</p>}
             </> : <p className="analysis-empty">No completed analysis is available. Return to the review and analyze a document first.</p>}          </> : extraction ? <>
             <button className="back-link" onClick={() => setExtraction(null)}><Icon name="back" size={17}/> Back to upload</button>

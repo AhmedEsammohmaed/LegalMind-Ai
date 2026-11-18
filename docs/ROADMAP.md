@@ -78,6 +78,8 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 
 **Goal:** Help users discuss changes without silently rewriting legal commitments.
 
+**Progress:** A user-authored negotiation brief can be prepared from a selected finding. It keeps the extracted wording beside the user's own proposed wording, records goals, rationale, tradeoffs, and unresolved questions, and exports only after explicit user input. No AI-generated alternatives or legal validation are provided.
+
 **Deliverables:** Alternatives tied to user goals and source clause; side-by-side original/proposed text; change rationale, assumptions, tradeoffs, and unresolved fields; copy/export only after explicit user review.
 
 **Exit criteria:** Proposed text is labeled as a draft for qualified review, never an automatically valid clause; no provision is invented as jurisdiction compliant; the user can reject or edit every change.
@@ -116,4 +118,5 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 - Stage 5: partially implemented; evidence spans and match offsets are returned. Taxonomy, reviewed-data evaluation, and counsel validation remain open.
 - Stage 6: partially implemented; citation metadata is versioned and status limitations are explicit. There are no source snapshots, hashes, automated updates, or comprehensive legal coverage.
 - Stage 7: verification gate implemented for current references; it abstains because provision text is not retrieved. RAG, quoted legal passages, and independent legal-claim verification remain unimplemented.
-- Stages 8–10: planned; not implemented or production-ready.
+- Stage 8: partially implemented; user-authored, side-by-side negotiation briefs are exportable. AI clause alternatives, review workflows, and legal validation remain open.
+- Stages 9–10: planned; not implemented or production-ready.
