@@ -48,6 +48,8 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 
 **Goal:** Expand current phrase triggers into explainable, evaluated contract observations.
 
+**Progress:** Each match now returns its exact matched phrase, surrounding evidence span, character offsets, and PDF page where available. Short evidence sentences remain local to the match rather than borrowing the next sentence. Output remains a text-pattern observation; no severity, probability, or legal-violation label is assigned.
+
 **Deliverables:** Separate labels for ambiguity, commercial imbalance, missing protection, potential legal issue, and factual uncertainty; evidence spans; counterparty impact; mitigation questions; no unsupported probability or high/medium/low risk scores.
 
 **Exit criteria:** Each output is traceable to source text and rule/model version; false-positive and false-negative rates are measured on reviewed, permissioned examples; qualified reviewers approve jurisdiction-specific claims.
@@ -56,6 +58,8 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 
 **Goal:** Replace a small hand-coded mapping with maintainable primary-source records.
 
+**Progress:** The citation registry now has a catalog version and source identifiers, authority, territory, publication/version notes, status-check metadata, and status URLs where checked. Some records deliberately say amendments/status were not checked; this is still a code-based citation index, not a full-text or change-monitored knowledge base.
+
 **Deliverables:** Source records with issuing authority, jurisdiction/territory, language, publication/effective/amendment dates, official URL, retrieved snapshot/hash, checked date, provision mapping, and applicability caveats; change review and supersession workflow.
 
 **Exit criteria:** Every surfaced legal claim has a verified primary-source link and provision; stale/unverified source states are visible; Egypt national, UAE federal/emirate, free-zone, and cross-border scope are not conflated. Qualified local counsel reviews the selected initial topics.
@@ -63,6 +67,8 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 ### 7. Research-grounded analysis and verification
 
 **Goal:** Add AI only where retrieval and independent checks can constrain its output.
+
+**Progress:** The analysis API reports a per-finding verification state. Because the current registry contains links and metadata but does not retrieve provision text, it marks legal claims unverified and abstains when jurisdiction/source coverage is missing. No LLM or RAG answer generation is enabled.
 
 **Deliverables:** Retrieval over approved legal records; structured claim output; quote-to-source validation; jurisdiction and effective-date checks; abstention for unsupported questions; prompt-injection defenses for document text; verification layer separate from drafting.
 
@@ -107,4 +113,7 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 - Stage 2: partially implemented. PDF extraction returns per-page text-layer/OCR provenance, OCR confidence signals, and whether the OCR page limit skipped processing. The interface exposes these details, and PDF screening findings now identify their source page when available. OCR quality benchmarks, correction workflow, and remaining extraction-quality exit criteria are still planned.
 - Stage 3: partially implemented; literal value candidates are source-linked, while contract structure, parties, conflicts, and corrections remain planned.
 - Stage 4: partially implemented; limited obligation wording and quoted trigger/condition candidates are exposed in the UI and report. Full obligation/deadline register and validation criteria remain planned.
-- Stages 5–10: planned; not implemented or production-ready.
+- Stage 5: partially implemented; evidence spans and match offsets are returned. Taxonomy, reviewed-data evaluation, and counsel validation remain open.
+- Stage 6: partially implemented; citation metadata is versioned and status limitations are explicit. There are no source snapshots, hashes, automated updates, or comprehensive legal coverage.
+- Stage 7: verification gate implemented for current references; it abstains because provision text is not retrieved. RAG, quoted legal passages, and independent legal-claim verification remain unimplemented.
+- Stages 8–10: planned; not implemented or production-ready.

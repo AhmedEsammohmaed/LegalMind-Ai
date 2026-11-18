@@ -5,6 +5,9 @@ export type Finding = {
   priority: "Review";
   title: string;
   evidence: string;
+  matchedText: string;
+  startOffset: number;
+  endOffset: number;
   pageNumber: number | null;
   explanation: string;
   question: string;
@@ -42,19 +45,18 @@ const rules: Rule[] = [
   { id: "disputes", priority: "Review", match: /(?:governing law|governed by the laws|jurisdiction|venue|arbitration|dispute resolution|courts of)|(?:القانون الواجب التطبيق|قانون[^.!؟\n]{0,20}(?:مصر|الإمارات)|الاختصاص القضائي|التحكيم|تسوية النزاعات|المحاكم المختصة)/iu, category: { en: "Disputes and governing law", ar: "النزاعات والقانون الواجب التطبيق" }, title: { en: "Dispute or governing-law terms are present", ar: "يتضمن النص أحكاماً للنزاعات أو القانون الواجب التطبيق" }, explanation: { en: "The text appears to identify a process, forum, or law for disputes. Confirm that it is clear and practical for the parties.", ar: "يبدو أن النص يحدد إجراءً أو جهة أو قانوناً للنزاعات. تحقّق من وضوحه وملاءمته للأطراف." }, question: { en: "Which law and forum apply, and are they practical for you?", ar: "ما القانون والجهة المختصة، وهل هما مناسبان لك؟" } },
 ];
 
-function evidenceFor(text: string, index: number) {
+function evidenceFor(text: string, index: number): { text: string; startOffset: number; endOffset: number } {
   const start = Math.max(text.lastIndexOf("\n", index), text.lastIndexOf(".", index), text.lastIndexOf("؟", index), text.lastIndexOf("!", index)) + 1;
   const ends = ["\n", ".", "؟", "!"].map((separator) => {
     const position = text.indexOf(separator, index);
     return position < 0 ? text.length : position + 1;
   });
   const end = Math.min(...ends);
-  const evidence = text.slice(start, end).trim();
-  if (evidence.length < 45) {
-    const following = text.slice(end).split(/[\n.!؟!]/u).map((part) => part.trim()).find((part) => part.length >= 45);
-    if (following) return following.slice(0, 700);
-  }
-  return evidence.slice(0, 700);
+  const raw = text.slice(start, end);
+  const leadingWhitespace = raw.length - raw.trimStart().length;
+  const evidenceStart = start + leadingWhitespace;
+  const evidence = raw.trim().slice(0, 700);
+  return { text: evidence, startOffset: evidenceStart, endOffset: evidenceStart + evidence.length };
 }
 
 function pageNumberFor(text: string, index: number): number | null {
@@ -69,14 +71,18 @@ export function analyzeContract(text: string, language: AnalysisLanguage): Findi
     const match = rule.match.exec(text);
     if (!match || !match[0]) return [];
     const evidence = evidenceFor(text, match.index);
-    if (rule.id === "disputes" && /not been reviewed for any jurisdiction|لم تراجع وفق قوانين أي اختصاص/iu.test(evidence)) return [];
+    const pageNumber = pageNumberFor(text, match.index);
+    if (rule.id === "disputes" && /not been reviewed for any jurisdiction|لم تراجع وفق قوانين أي اختصاص/iu.test(evidence.text)) return [];
     return [{
       id: rule.id,
       category: rule.category[language],
       priority: rule.priority,
       title: rule.title[language],
-      evidence,
-      pageNumber: pageNumberFor(text, match.index),
+      evidence: evidence.text,
+      matchedText: match[0],
+      startOffset: evidence.startOffset,
+      endOffset: evidence.endOffset,
+      pageNumber,
       explanation: rule.explanation[language],
       question: rule.question[language],
     }];

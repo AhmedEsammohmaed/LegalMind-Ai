@@ -1,7 +1,8 @@
 import { analyzeContract, type AnalysisLanguage } from "@/lib/legal-analysis";
-import { getLegalReferences, type Jurisdiction } from "@/lib/legal-sources";
+import { getLegalReferences, LEGAL_SOURCE_CATALOG_VERSION, type Jurisdiction } from "@/lib/legal-sources";
 import { extractContractFacts } from "@/lib/contract-facts";
 import { extractObligationCandidates } from "@/lib/contract-obligations";
+import { getLegalResearchVerification } from "@/lib/legal-research-verification";
 
 const MAX_ANALYSIS_CHARACTERS = 80_000;
 
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
   const contractFacts = extractContractFacts(text, language as AnalysisLanguage);
   const obligations = extractObligationCandidates(text, contractFacts);
   const legalReferences = getLegalReferences(jurisdiction as Jurisdiction, findings.map((finding) => finding.id));
+  const legalResearchVerification = getLegalResearchVerification(jurisdiction as Jurisdiction, findings.map((finding) => finding.id));
   return Response.json({
     language,
     jurisdiction,
@@ -41,6 +43,8 @@ export async function POST(request: Request) {
     contractFacts,
     obligations,
     legalReferences,
+    legalSourceCatalogVersion: LEGAL_SOURCE_CATALOG_VERSION,
+    legalResearchVerification,
     summary: language === "ar"
       ? findings.length ? `تم رصد ${findings.length} بنداً يستحق المراجعة.` : "لم ترصد قواعد الفحص الأولي بنوداً مطابقة. هذا لا يعني خلو العقد من المخاطر."
       : findings.length ? `${findings.length} clause(s) flagged for review.` : "The initial screening found no matching clauses. This does not mean the contract is risk-free.",

@@ -146,6 +146,10 @@
 .legal-reference>span,.legal-reference details p,.no-legal-reference{margin:0;color:#7c8980;font-size:8px;line-height:1.6}
 .legal-reference details summary{color:#748178;font-size:8px;cursor:pointer}
 .legal-reference details p{margin-top:5px}
+.legal-reference details>a{color:#35644a;font-size:8px}
+.research-verification-note{margin:7px 0 12px;padding:8px 10px;border-inline-start:2px solid #cfb878;background:#fbf8ef;color:#786a45;font-size:8px;line-height:1.55}
+.finding-match{margin:6px 0 4px;color:#627168;font-size:8px;line-height:1.5;overflow-wrap:anywhere}
+.finding-match q{color:#354b3d;font-weight:600}
 .no-legal-reference{padding:8px 9px;background:#f6f7f6;border-radius:5px}
 @media(max-width:720px){.report-title-row .extraction-complete{font-size:0;padding:8px}.report-title-row .extraction-complete svg{width:16px;height:16px}.extracted-text-card{padding:13px}.extracted-text{font-size:10px;padding:11px;max-height:55vh}.extraction-next{align-items:flex-start;flex-direction:column}.extraction-next .secondary-button{width:100%;justify-content:center}.extraction-meta .report-date strong{overflow-wrap:anywhere}}
 .review-field{display:flex;flex-direction:column;gap:0;min-width:170px;flex:1}

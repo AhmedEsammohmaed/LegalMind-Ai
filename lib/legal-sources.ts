@@ -1,73 +1,150 @@
 export type Jurisdiction = "Egypt" | "United Arab Emirates" | "I’m not sure";
 
 export type LegalReference = {
+  sourceId: string;
   title: string;
   citation: string;
   url: string;
   language: "Arabic" | "English";
   effectiveFrom: string;
   checkedOn: string;
+  issuingAuthority: string;
+  issuingAuthorityAr: string;
+  territorialScope: string;
+  territorialScopeAr: string;
+  publicationDate: string;
+  versionDescription: string;
+  versionDescriptionAr: string;
+  versionStatus: "effective-date-checked-amendments-not-checked" | "in-force-status-checked" | "status-not-checked" | "secondary-consolidation-through-2020";
+  statusCheckedOn: string;
+  statusSourceUrl: string | null;
   sourceNote: string;
   sourceNoteAr: string;
   note: string;
 };
 
 const egyptSource = {
+  sourceId: "EG-CIVIL-CODE-131-1948",
   title: "القانون المدني رقم 131 لسنة 1948",
   url: "https://www.eta.gov.eg/sites/default/files/2024-10/law-131-1948.pdf",
   language: "Arabic" as const,
   effectiveFrom: "1949-10-15",
-  checkedOn: "2026-11-16",
+  checkedOn: "2026-11-18",
+  issuingAuthority: "Egyptian legislature; hosted by the Egyptian Tax Authority",
+  issuingAuthorityAr: "المشرّع المصري؛ مستضاف لدى مصلحة الضرائب المصرية",
+  territorialScope: "Egypt, national civil law",
+  territorialScopeAr: "مصر، تشريع مدني وطني",
+  publicationDate: "1948-07-29",
+  versionDescription: "Government-hosted original text; not a consolidated amendment history",
+  versionDescriptionAr: "النص الأصلي المستضاف حكومياً؛ ليس تجميعاً موحداً للتعديلات",
+  versionStatus: "in-force-status-checked" as const,
+  statusCheckedOn: "2026-11-18",
+  statusSourceUrl: "https://mof.gov.eg/ar/legislation/legislation-5fe86afe7bfc600007cc03c7",
   sourceNote: "Government-hosted original text. The Ministry of Finance lists the law as in force but says its online texts are guidance and the Official Gazette is controlling. This source is not a consolidated amendment history; verify the current text in the Gazette.",
   sourceNoteAr: "نص أصلي مستضاف حكومياً. تدرج وزارة المالية القانون كسارٍ، لكنها توضح أن النصوص الإلكترونية إرشادية وأن الوقائع المصرية هي المرجع القانوني. هذا الملف ليس تجميعاً للتعديلات؛ تحقق من النص الحالي في الجريدة الرسمية.",
 };
 
 const uaeSource = {
+  sourceId: "AE-CIVIL-TRANSACTIONS-25-2025",
   title: "Federal Decree by Law No. 25 of 2025 Promulgating the Civil Transactions Law",
   url: "https://uaelegislation.gov.ae/en/legislations/4011/download",
   language: "English" as const,
   effectiveFrom: "2026-06-01",
-  checkedOn: "2026-11-16",
+  checkedOn: "2026-11-18",
+  issuingAuthority: "United Arab Emirates, federal legislation",
+  issuingAuthorityAr: "دولة الإمارات العربية المتحدة، تشريع اتحادي",
+  territorialScope: "UAE federal civil transactions framework; emirate-specific and free-zone rules may also apply",
+  territorialScopeAr: "الإطار الاتحادي للمعاملات المدنية في الإمارات؛ قد تنطبق أيضاً قواعد إماراتية محلية أو مناطق حرة",
+  publicationDate: "Issued 2025-10-01; Official Gazette publication date not recorded",
+  versionDescription: "Federal Decree by Law No. 25 of 2025; effective 2026-06-01; official English translation",
+  versionDescriptionAr: "مرسوم بقانون اتحادي رقم 25 لسنة 2025؛ نافذ من 2026-06-01؛ ترجمة إنجليزية رسمية",
+  versionStatus: "effective-date-checked-amendments-not-checked" as const,
+  statusCheckedOn: "2026-11-18",
+  statusSourceUrl: "https://uaelegislation.gov.ae/en/legislations/4011/download",
   sourceNote: "Official UAE Legislation platform text. Article 3 brings this law into force on 1 June 2026 and Article 2 repeals Federal Law No. 5 of 1985. Check the official Arabic text and any subsequent amendment before relying on this translation.",
   sourceNoteAr: "نص منشور على منصة تشريعات الإمارات الرسمية. تقضي المادة 3 بسريان القانون من 1 يونيو 2026، وتلغي المادة 2 القانون الاتحادي رقم 5 لسنة 1985. تحقق من النص العربي الرسمي وأي تعديل لاحق.",
 };
 
 const egyptDataSource = {
+  sourceId: "EG-PERSONAL-DATA-151-2020",
   title: "قانون رقم 151 لسنة 2020 بإصدار قانون حماية البيانات الشخصية",
   url: "https://escc.gov.eg/assets/docs/law-151-2020.pdf",
   language: "Arabic" as const,
   effectiveFrom: "Article 7: three months after the day following publication (Official Gazette, 2020-07-15)",
   checkedOn: "2026-11-16",
+  issuingAuthority: "Egyptian legislature; text reproduced from the Official Gazette",
+  issuingAuthorityAr: "المشرّع المصري؛ نص منشور من الجريدة الرسمية",
+  territorialScope: "Egypt, national personal-data protection law",
+  territorialScopeAr: "مصر، قانون وطني لحماية البيانات الشخصية",
+  publicationDate: "2020-07-15",
+  versionDescription: "Official Gazette text; executive regulations and subsequent amendments not checked",
+  versionDescriptionAr: "نص الجريدة الرسمية؛ لم يتم التحقق من اللائحة التنفيذية أو التعديلات اللاحقة",
+  versionStatus: "status-not-checked" as const,
+  statusCheckedOn: "2026-11-16",
+  statusSourceUrl: null,
   sourceNote: "Arabic text reproduced from the Official Gazette, Issue 28 bis (e), 15 July 2020. Executive Regulations and later amendments are not checked in this citation record.",
   sourceNoteAr: "نص عربي منشور في الجريدة الرسمية، العدد 28 مكرر (هـ)، 15 يوليو 2020. لم نتحقق هنا من اللائحة التنفيذية أو التعديلات اللاحقة.",
 };
 
 const uaeDataSource = {
+  sourceId: "AE-PERSONAL-DATA-45-2021",
   title: "Federal Decree by Law No. 45 of 2021 Concerning the Protection of Personal Data",
   url: "https://www.uaelegislation.gov.ae/en/legislations/1972/download",
   language: "English" as const,
   effectiveFrom: "2022-01-02",
   checkedOn: "2026-11-16",
+  issuingAuthority: "United Arab Emirates, federal legislation platform",
+  issuingAuthorityAr: "منصة تشريعات دولة الإمارات العربية المتحدة، تشريع اتحادي",
+  territorialScope: "UAE federal personal-data protection framework; scope and exceptions require review",
+  territorialScopeAr: "الإطار الاتحادي الإماراتي لحماية البيانات الشخصية؛ يلزم التحقق من النطاق والاستثناءات",
+  publicationDate: "2021 (Federal Decree by Law No. 45 of 2021)",
+  versionDescription: "Official English text; executive regulations, sector exceptions, and later amendments not checked",
+  versionDescriptionAr: "النص الإنجليزي الرسمي؛ لم يتم التحقق من اللائحة التنفيذية أو الاستثناءات القطاعية أو التعديلات اللاحقة",
+  versionStatus: "status-not-checked" as const,
+  statusCheckedOn: "2026-11-16",
+  statusSourceUrl: null,
   sourceNote: "Official UAE Legislation platform English text. Executive Regulations, sector-specific exemptions, and any later amendments are not covered by this citation record; check the official Arabic text.",
   sourceNoteAr: "نص إنجليزي منشور على منصة تشريعات الإمارات الرسمية. لا يشمل هذا المرجع اللائحة التنفيذية أو الاستثناءات القطاعية أو أي تعديلات لاحقة؛ راجع النص العربي الرسمي.",
 };
 
 const egyptCopyrightSource = {
+  sourceId: "EG-IP-LAW-82-2002",
   title: "Law No. 82 of 2002 on the Protection of Intellectual Property Rights (amended through 2020)",
   url: "https://www.wipo.int/wipolex/en/legislation/details/22066",
   language: "English" as const,
   effectiveFrom: "2002-06-03",
   checkedOn: "2026-11-16",
+  issuingAuthority: "Egyptian legislature; English consolidation hosted by WIPO Lex",
+  issuingAuthorityAr: "المشرّع المصري؛ نسخة إنجليزية مجمعة مستضافة لدى WIPO Lex",
+  territorialScope: "Egypt, national intellectual-property law",
+  territorialScopeAr: "مصر، قانون وطني للملكية الفكرية",
+  publicationDate: "2002",
+  versionDescription: "WIPO Lex consolidation amended through 2020-09-05; later amendments not checked",
+  versionDescriptionAr: "نسخة WIPO Lex مجمعة ومعدلة حتى 2020-09-05؛ لم يتم التحقق من التعديلات اللاحقة",
+  versionStatus: "secondary-consolidation-through-2020" as const,
+  statusCheckedOn: "2026-11-16",
+  statusSourceUrl: null,
   sourceNote: "WIPO Lex identifies this consolidated text as amended through 5 September 2020; later amendments are not checked here. Its English page provides the Arabic text as the authoritative version.",
   sourceNoteAr: "تعرف WIPO Lex هذه النسخة المجمعة بأنها معدلة حتى 5 سبتمبر 2020؛ لم نتحقق هنا من تعديلات لاحقة. النص العربي هو النص المعتمد.",
 };
 
 const uaeCopyrightSource = {
+  sourceId: "AE-COPYRIGHT-38-2021",
   title: "Federal Decree-Law No. 38 of 2021 on Copyright and Neighboring Rights",
   url: "https://uaelegislation.gov.ae/en/legislations/1534/download",
   language: "English" as const,
   effectiveFrom: "2022-01-02",
   checkedOn: "2026-11-16",
+  issuingAuthority: "United Arab Emirates, federal legislation platform",
+  issuingAuthorityAr: "منصة تشريعات دولة الإمارات العربية المتحدة، تشريع اتحادي",
+  territorialScope: "UAE federal copyright and neighboring-rights law",
+  territorialScopeAr: "قانون اتحادي إماراتي لحقوق المؤلف والحقوق المجاورة",
+  publicationDate: "2021 (Federal Decree-Law No. 38 of 2021)",
+  versionDescription: "Official English text; later amendments and executive regulations not checked",
+  versionDescriptionAr: "النص الإنجليزي الرسمي؛ لم يتم التحقق من التعديلات اللاحقة أو اللوائح التنفيذية",
+  versionStatus: "status-not-checked" as const,
+  statusCheckedOn: "2026-11-16",
+  statusSourceUrl: null,
   sourceNote: "Official UAE Legislation platform English text. Check the official Arabic text and subsequent amendments or executive regulations before relying on it.",
   sourceNoteAr: "نص إنجليزي منشور على منصة تشريعات الإمارات الرسمية. تحقق من النص العربي الرسمي والتعديلات واللوائح التنفيذية قبل الاعتماد عليه.",
 };
@@ -136,6 +213,8 @@ const mappings: Record<string, SourceRule[]> = {
     { topic: "Contract amendment", article: "Article 113(2)", note: "General rule on amendment and rescission; it does not assess this amendment clause.", jurisdictions: { "United Arab Emirates": { ...uaeSource, citation: "Article 113(2)" } } },
   ],
 };
+
+export const LEGAL_SOURCE_CATALOG_VERSION = "2026.11.18.1";
 
 // Every analyzer topic has an explicit decision per supported jurisdiction.
 // Missing mappings remain visible as research gaps; they are never filled with a loosely related citation.
