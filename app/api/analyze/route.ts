@@ -6,29 +6,33 @@ import { getLegalResearchVerification } from "@/lib/legal-research-verification"
 
 const MAX_ANALYSIS_CHARACTERS = 80_000;
 
+function jsonResponse(body: unknown, status = 200) {
+  return Response.json(body, { status, headers: { "Cache-Control": "no-store, max-age=0" } });
+}
+
 export async function POST(request: Request) {
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: { code: "INVALID_JSON", message: "Send a valid JSON request." } }, { status: 400 });
+    return jsonResponse({ error: { code: "INVALID_JSON", message: "Send a valid JSON request." } }, 400);
   }
   if (!body || typeof body !== "object") {
-    return Response.json({ error: { code: "INVALID_REQUEST", message: "Provide extracted document text." } }, { status: 400 });
+    return jsonResponse({ error: { code: "INVALID_REQUEST", message: "Provide extracted document text." } }, 400);
   }
 
   const { text, language, jurisdiction } = body as Record<string, unknown>;
   if (typeof text !== "string" || !text.trim()) {
-    return Response.json({ error: { code: "TEXT_REQUIRED", message: "There is no extracted text to analyze." } }, { status: 400 });
+    return jsonResponse({ error: { code: "TEXT_REQUIRED", message: "There is no extracted text to analyze." } }, 400);
   }
   if (text.length > MAX_ANALYSIS_CHARACTERS) {
-    return Response.json({ error: { code: "TEXT_TOO_LONG", message: "Analysis is limited to 80,000 characters. Use a shorter document or analyze sections separately." } }, { status: 413 });
+    return jsonResponse({ error: { code: "TEXT_TOO_LONG", message: "Analysis is limited to 80,000 characters. Use a shorter document or analyze sections separately." } }, 413);
   }
   if (language !== "ar" && language !== "en") {
-    return Response.json({ error: { code: "INVALID_LANGUAGE", message: "Choose Arabic or English for the analysis output." } }, { status: 400 });
+    return jsonResponse({ error: { code: "INVALID_LANGUAGE", message: "Choose Arabic or English for the analysis output." } }, 400);
   }
   if (typeof jurisdiction !== "string" || !["Egypt", "United Arab Emirates", "I’m not sure"].includes(jurisdiction)) {
-    return Response.json({ error: { code: "INVALID_JURISDICTION", message: "Choose a supported jurisdiction option." } }, { status: 400 });
+    return jsonResponse({ error: { code: "INVALID_JURISDICTION", message: "Choose a supported jurisdiction option." } }, 400);
   }
 
   const findings = analyzeContract(text, language as AnalysisLanguage);
@@ -36,7 +40,7 @@ export async function POST(request: Request) {
   const obligations = extractObligationCandidates(text, contractFacts);
   const legalReferences = getLegalReferences(jurisdiction as Jurisdiction, findings.map((finding) => finding.id));
   const legalResearchVerification = getLegalResearchVerification(jurisdiction as Jurisdiction, findings.map((finding) => finding.id));
-  return Response.json({
+  return jsonResponse({
     language,
     jurisdiction,
     findings,

@@ -34,7 +34,7 @@ type ExtractedContent = {
 };
 
 function jsonError(status: number, code: string, message: string) {
-  return Response.json({ error: { code, message } }, { status });
+  return Response.json({ error: { code, message } }, { status, headers: { "Cache-Control": "no-store, max-age=0" } });
 }
 
 function isPdf(bytes: Uint8Array) {
@@ -275,7 +275,7 @@ export async function POST(request: Request) {
       fileName: file.name,
       fileType: extension === "pdf" ? "PDF" : "DOCX",
       ...extracted,
-    });
+    }, { headers: { "Cache-Control": "no-store, max-age=0" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "The document could not be processed.";
     if (message.includes("more than 200 pages")) return jsonError(413, "TOO_MANY_PAGES", message);

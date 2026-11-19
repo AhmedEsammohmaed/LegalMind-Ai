@@ -17,15 +17,16 @@ Open `http://localhost:3000`. Stop the server with `Ctrl+C`.
 
 - The frontend accepts PDF and DOCX files up to 20 MB. It lets you choose Arabic, English, or both for OCR.
 - `POST /api/extract` validates the file signature and extracts selectable PDF or DOCX text.
-- Uploaded documents are processed in server memory and are not written to disk by this endpoint.
+- Uploaded documents are processed in server memory and are not written to disk by the extraction endpoint. When the user requests screening, the extracted text is sent to `/api/analyze`.
 - PDF processing is limited to 200 pages, and OCR is limited to 10 sparse-text pages per request. OCR confidence is an automated estimate; verify all OCR text against the source. DOCX archives are checked for unsafe expansion. Extracted text is capped at 200,000 characters. PDF responses also include per-page text-layer/OCR provenance and OCR confidence signals. These describe extraction method, not text accuracy.
 - OCR runs locally in the app server with Tesseract.js and installed Arabic/English language data.
 - `POST /api/analyze` returns conservative, verbatim candidate amounts, dates, and payment periods with source-page references when available; it also runs a transparent bilingual rule screen over extracted text. It flags selected clause topics and returns source wording, a plain-language explanation, and a question to discuss. It does not determine legal risk, interpret the full contract, or verify current law.
+- The browser holds the current source file, extracted text, analysis, and negotiation draft in page memory. Markdown exports are created in the browser. The app has no login, database, or saved review history. API responses use `Cache-Control: no-store`; hosting-provider and network retention depend on deployment configuration. See `docs/security/PRIVACY-AND-DATA-FLOW.md` before changing this flow.
 - PDF findings include a source-page reference when the matched text follows an extracted page marker; DOCX findings do not include page numbers. The analyzer uses rule-based matching only. Jurisdiction selection does not change findings; it selects from a small, manually curated source registry for mapped topics. Citations are research leads, not a legal conclusion that a clause is valid, invalid, or breached. Source status and known version limits are shown with each reference; there is no automatic law update or full-text search.
 - Run `npm run evaluate:analysis` to check English and Arabic phrase coverage against synthetic positive/negative cases and the two ground-truth fixtures. See `docs/evaluation/ANALYSIS.md` for scope and limits.
 - Synthetic Arabic/English fixtures and a manual OCR checklist are in `docs/evaluation/CHECKLIST.md`. Regenerate fixtures with `python scripts/create_synthetic_contract_fixtures.py` (requires the documented Python packages and Arial fonts).
 
-This is a local development prototype. Do not expose the upload endpoint publicly or use it with confidential contracts until authentication, rate limits, deployment limits, privacy controls, and security review are added.
+This is a local development prototype. Do not expose the upload endpoint publicly or use it with confidential contracts until authentication, tenant isolation, rate limits, deployment limits, privacy controls, provider retention terms, and security review are in place.
 
 ## Production build
 
