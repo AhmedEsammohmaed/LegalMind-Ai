@@ -88,7 +88,7 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 
 **Goal:** Introduce multi-user use only after data handling is designed.
 
-**Progress:** Added a current data-flow/security baseline, clarified that the existing profile UI was not a real account, added no-store API responses, and applied baseline HTTP security headers. No auth, database, tenant isolation, rate limiting, or hosting-provider retention controls are implemented.
+**Progress:** Added a current data-flow/security baseline, clarified that the existing profile UI was not a real account, added no-store API responses, baseline HTTP security headers, and streaming request-body caps before parsing. No auth, database, tenant isolation, shared rate limiting, or hosting-provider retention controls are implemented.
 
 **Deliverables:** Select hosting/database/auth vendors; tenant isolation and role-based access; encryption and key management; consent, retention, deletion/export, audit logging without document contents, backups, rate limits, abuse controls, incident process, and data-processing disclosures.
 
@@ -121,5 +121,5 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 - Stage 6: partially implemented; citation metadata is versioned and status limitations are explicit. There are no source snapshots, hashes, automated updates, or comprehensive legal coverage.
 - Stage 7: verification gate implemented for current references; it abstains because provision text is not retrieved. RAG, quoted legal passages, and independent legal-claim verification remain unimplemented.
 - Stage 8: partially implemented; user-authored, side-by-side negotiation briefs are exportable. AI clause alternatives, review workflows, and legal validation remain open.
-- Stage 9: groundwork only; data-flow documentation, no-store API headers, and baseline HTTP headers are in place. Authentication, persistence, tenant isolation, rate limits, provider selection, and operational controls are not implemented.
+- Stage 9: groundwork only; data-flow documentation, no-store API headers, baseline HTTP headers, and pre-parse request byte caps are in place. Authentication, persistence, tenant isolation, shared rate limits, provider selection, and operational controls are not implemented.
 - Stage 10: planned; not implemented or production-ready.

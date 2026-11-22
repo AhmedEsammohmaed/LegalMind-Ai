@@ -4,11 +4,13 @@ import path from "node:path";
 import mammoth from "mammoth";
 import { createWorker, OEM } from "tesseract.js";
 import { getDocumentProxy, renderPageAsImage } from "unpdf";
+import { readBoundedRequestBody } from "@/lib/request-body";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const MAX_MULTIPART_REQUEST_BYTES = MAX_FILE_BYTES + 1024 * 1024;
 const MAX_DOCX_UNCOMPRESSED_BYTES = 40 * 1024 * 1024;
 const MAX_DOCX_COMPRESSION_RATIO = 200;
 const MAX_PDF_PAGES = 200;
@@ -233,14 +235,23 @@ async function extractDocx(bytes: Uint8Array): Promise<ExtractedContent> {
 }
 
 export async function POST(request: Request) {
-  const declaredLength = Number(request.headers.get("content-length") ?? 0);
-  if (declaredLength > MAX_FILE_BYTES + 64 * 1024) {
-    return jsonError(413, "FILE_TOO_LARGE", "Files must be 20 MB or smaller.");
+  const boundedBody = await readBoundedRequestBody(request, MAX_MULTIPART_REQUEST_BYTES);
+  if (!boundedBody.ok) {
+    return jsonError(
+      boundedBody.reason === "too-large" ? 413 : 400,
+      boundedBody.reason === "too-large" ? "REQUEST_TOO_LARGE" : "UNREADABLE_REQUEST",
+      boundedBody.reason === "too-large" ? "The upload request is too large." : "The upload request could not be read.",
+    );
   }
 
   let formData: FormData;
   try {
-    formData = await request.formData();
+    const replayableRequest = new Request(request.url, {
+      method: "POST",
+      headers: { "Content-Type": request.headers.get("content-type") ?? "" },
+      body: boundedBody.bytes,
+    });
+    formData = await replayableRequest.formData();
   } catch {
     return jsonError(400, "INVALID_MULTIPART", "Send a multipart form with one PDF or DOCX file.");
   }

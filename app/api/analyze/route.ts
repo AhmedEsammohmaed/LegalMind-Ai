@@ -3,17 +3,27 @@ import { getLegalReferences, LEGAL_SOURCE_CATALOG_VERSION, type Jurisdiction } f
 import { extractContractFacts } from "@/lib/contract-facts";
 import { extractObligationCandidates } from "@/lib/contract-obligations";
 import { getLegalResearchVerification } from "@/lib/legal-research-verification";
+import { readBoundedRequestBody } from "@/lib/request-body";
 
 const MAX_ANALYSIS_CHARACTERS = 80_000;
+const MAX_ANALYSIS_BODY_BYTES = 512 * 1024;
 
 function jsonResponse(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "Cache-Control": "no-store, max-age=0" } });
 }
 
 export async function POST(request: Request) {
+  const boundedBody = await readBoundedRequestBody(request, MAX_ANALYSIS_BODY_BYTES);
+  if (!boundedBody.ok) {
+    return jsonResponse(
+      { error: { code: boundedBody.reason === "too-large" ? "REQUEST_TOO_LARGE" : "UNREADABLE_REQUEST", message: boundedBody.reason === "too-large" ? "The analysis request is too large." : "The analysis request could not be read." } },
+      boundedBody.reason === "too-large" ? 413 : 400,
+    );
+  }
+
   let body: unknown;
   try {
-    body = await request.json();
+    body = JSON.parse(new TextDecoder().decode(boundedBody.bytes));
   } catch {
     return jsonResponse({ error: { code: "INVALID_JSON", message: "Send a valid JSON request." } }, 400);
   }
