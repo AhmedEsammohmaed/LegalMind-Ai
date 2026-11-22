@@ -29,6 +29,8 @@ Open `http://localhost:3000`. Stop the server with `Ctrl+C`.
 
 This is a local development prototype. Do not expose the upload endpoint publicly or use it with confidential contracts until authentication, tenant isolation, rate limits, deployment limits, privacy controls, provider retention terms, and security review are in place.
 
+See [SECURITY.md](SECURITY.md) for the private vulnerability-reporting process.
+
 ## Production build
 
 ```powershell
