@@ -31,6 +31,10 @@ The Next.js app disables its identifying `X-Powered-By` header and emits `nosnif
 - Do not send contract text to a third-party AI, OCR, or analytics provider until its retention, training, residency, and contractual terms are verified and disclosed in-product.
 - Add a deployment-reviewed CSP, HTTPS/HSTS, redacted observability, dependency checks, security review, and a rollback plan before a public pilot.
 
+## Automated repository checks
+
+GitHub Actions runs CodeQL security-extended analysis for JavaScript and TypeScript on pushes, pull requests, and weekly. Dependabot is configured to propose weekly npm and GitHub Actions updates. Review and merge updates deliberately; automated scanning and dependency alerts do not replace incident response, deployment monitoring, or a security review. Code scanning availability depends on repository visibility and GitHub plan/settings.
+
 ## Stage 9 exit evidence still required
 
 Stage 9 is not complete. It requires a selected provider, approved threat model and privacy notice, implemented auth and authorization, tested tenant isolation, verified retention/deletion and backup restore, production rate limits, and a security review. The current prototype does not meet those conditions.

@@ -88,7 +88,7 @@ The repository has a Next.js interface, in-memory PDF/DOCX text extraction with 
 
 **Goal:** Introduce multi-user use only after data handling is designed.
 
-**Progress:** Added a current data-flow/security baseline, clarified that the existing profile UI was not a real account, added no-store API responses, baseline HTTP security headers, and streaming request-body caps before parsing. No auth, database, tenant isolation, shared rate limiting, or hosting-provider retention controls are implemented.
+**Progress:** Added a current data-flow/security baseline, clarified that the existing profile UI was not a real account, added no-store API responses, baseline HTTP security headers, streaming request-body caps before parsing, weekly CodeQL scanning, and Dependabot update proposals. No auth, database, tenant isolation, shared rate limiting, or hosting-provider retention controls are implemented.
 
 **Deliverables:** Select hosting/database/auth vendors; tenant isolation and role-based access; encryption and key management; consent, retention, deletion/export, audit logging without document contents, backups, rate limits, abuse controls, incident process, and data-processing disclosures.
 
